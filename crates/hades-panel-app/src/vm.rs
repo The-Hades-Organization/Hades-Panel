@@ -34,8 +34,13 @@ const fn pagina(
 
 pub const VISAO_GERAL: &str = "overview";
 
-/// Grupos do trilho (`CORE_GROUPS` de `kit/panel/ui/app.tsx:662-668`), com Ferramentas no lugar de "Hades" e as
-/// seis ferramentas embutidas (plano F5 painel §6). Rótulos e descrições vêm do `CORE_NAV` (`app.tsx:637-661`).
+pub const ARGOS: &str = "argos";
+
+/// Título do grupo do trilho depois do qual entram os grupos das ferramentas embutidas.
+pub const FERRAMENTAS: &str = "Ferramentas";
+
+/// Grupos do trilho (`CORE_GROUPS` de `kit/panel/ui/app.tsx:662-668`), com Ferramentas no lugar de "Hades": o Argos,
+/// por processo, e depois dele um grupo por ferramenta linkada (`embutidas_vm::grupos`, plano F5 painel §6). Rótulos e descrições vêm do `CORE_NAV` (`app.tsx:637-661`).
 pub const GRUPOS: &[(&str, &[Pagina])] = &[
     (
         "Ambiente",
@@ -137,40 +142,11 @@ pub const GRUPOS: &[(&str, &[Pagina])] = &[
         ],
     ),
     (
-        "Ferramentas",
-        &[
-            pagina(
-                "argos",
-                "Argos",
-                IconName::Grafo,
-                "Grafo dos agentes ao vivo",
-            ),
-            pagina(
-                "moirai",
-                "Moirai",
-                IconName::Hourglass,
-                "Orçamento e estimativa das frentes",
-            ),
-            pagina(
-                "cerberus",
-                "Cerberus",
-                IconName::Guarda,
-                "Porta, Limiar e Vigília: guardas, vereditos e exceções",
-            ),
-            pagina("minos", "Minos", IconName::Scale, "Julgamento das entregas"),
-            pagina(
-                "thanatos",
-                "Thanatos",
-                IconName::Skull,
-                "Post-mortems de incidentes e bugs em produção",
-            ),
-            pagina(
-                "caronte",
-                "Caronte",
-                IconName::Caronte,
-                "Leve uma orquestração para outra sessão ou máquina",
-            ),
-        ],
+        FERRAMENTAS,
+        &[Pagina {
+            pronta: true,
+            ..pagina(ARGOS, "Argos", IconName::Grafo, "Grafo dos agentes ao vivo")
+        }],
     ),
     (
         "Sistema",

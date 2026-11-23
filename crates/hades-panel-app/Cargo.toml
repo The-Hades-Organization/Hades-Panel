@@ -21,6 +21,19 @@ hades-ui.workspace = true
 gpui.workspace = true
 gpui_platform.workspace = true
 gpui-component.workspace = true
+moirai-app = { workspace = true, optional = true }
+thanatos-app = { workspace = true, optional = true }
+caronte-app = { workspace = true, optional = true }
+cerberus-app = { workspace = true, optional = true }
+minos-app = { workspace = true, optional = true }
+
+[features]
+default = ["moirai", "thanatos", "caronte", "cerberus", "minos"]
+moirai = ["dep:moirai-app"]
+thanatos = ["dep:thanatos-app"]
+caronte = ["dep:caronte-app"]
+cerberus = ["dep:cerberus-app"]
+minos = ["dep:minos-app"]
 
 [lints]
 workspace = true

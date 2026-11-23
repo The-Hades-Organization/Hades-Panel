@@ -19,6 +19,7 @@ fn trilho_tem_os_cinco_grupos_e_as_paginas_prontas() {
             "reviews",
             "queue",
             "usage",
+            ARGOS,
             "config"
         ]
     );
@@ -36,14 +37,10 @@ fn ids_e_rotulos_sao_unicos() {
 }
 
 #[test]
-fn ferramentas_sao_as_seis() {
+fn ferramentas_fixas_sao_so_o_argos() {
+    assert_eq!(GRUPOS[3].0, FERRAMENTAS);
     let f: Vec<&str> = GRUPOS[3].1.iter().map(|p| p.rotulo).collect();
-    assert_eq!(
-        f,
-        [
-            "Argos", "Moirai", "Cerberus", "Minos", "Thanatos", "Caronte"
-        ]
-    );
+    assert_eq!(f, ["Argos"]);
 }
 
 #[test]

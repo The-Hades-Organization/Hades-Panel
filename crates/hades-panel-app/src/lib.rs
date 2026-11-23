@@ -1,6 +1,10 @@
 //! App gpui do painel do Hades: casca com o trilho, a Visão geral, Loop, Fila de gates e Consumo, a barra de estado e
 //! a paleta Ctrl K. As outras páginas entram nos PRs seguintes e, até lá, mostram o estado vazio.
 
+pub mod acoes;
+pub mod argos;
+pub mod embutidas;
+pub mod embutidas_vm;
 pub mod service;
 pub mod telas;
 pub mod vm;
@@ -14,13 +18,16 @@ use gpui::{
 };
 use hades_core::Env;
 use hades_ui::components::{
-    CommandPalette, Dot, EmptyState, Kbd, PageHeader, Rail, RailBrand, RailGroup, RailItem,
-    Sparkline, StatusBar,
+    Button, CommandPalette, Confirm, Dot, EmptyState, Kbd, PageHeader, Rail, RailBrand, RailGroup,
+    RailItem, Sparkline, StatusBar, Toast,
 };
 use hades_ui::icons::{Icon, IconName};
 use hades_ui::tokens::size;
 use hades_ui::{Palette, Tone, palette};
 
+use crate::acoes::{Acao, Pedido, Resultado};
+use crate::embutidas::{Aberta, Registro};
+use crate::embutidas_vm::{Destino, GrupoFerramenta};
 use crate::service::Dados;
 use crate::vm::{Historico, Leitura, Pagina, Tarefa, Tom, VisaoGeral};
 
@@ -43,6 +50,16 @@ pub struct PanelView {
     visao_fila: telas::fila::Visao,
     historico_fila: telas::fila::HistoricoFila,
     tela: Option<telas::Tela>,
+    registros: Vec<Registro>,
+    grupos_ferramentas: Vec<GrupoFerramenta>,
+    /// Views de ferramenta já abertas: seguem vivas ao trocar de página.
+    abertas: Vec<(&'static str, Rc<dyn Aberta>)>,
+    /// Ferramenta e tela no corpo, no lugar da página.
+    ferramenta: Option<(&'static str, &'static str)>,
+    acoes: Vec<Acao>,
+    confirmar: Option<(Pedido, String)>,
+    aviso_acao: Option<(Tone, String, Option<String>)>,
+    argos: Option<(argos::Estado, String)>,
 }
 
 fn tone(t: Tom) -> Tone {
@@ -79,7 +96,19 @@ impl PanelView {
             visao_fila: telas::fila::Visao::default(),
             historico_fila: telas::fila::HistoricoFila::default(),
             tela: None,
+            registros: embutidas::registros(),
+            grupos_ferramentas: Vec::new(),
+            abertas: Vec::new(),
+            ferramenta: None,
+            acoes: Vec::new(),
+            confirmar: None,
+            aviso_acao: None,
+            argos: None,
         };
+        let ligadas: Vec<_> = v.registros.iter().map(|r| r.ligada).collect();
+        let ocupados: Vec<&str> = vm::paginas().map(|p| p.rotulo).collect();
+        v.grupos_ferramentas = embutidas_vm::grupos(&ligadas, &ocupados);
+        v.carregar_acoes(cx);
         v.recarregar(cx);
         v
     }
@@ -131,8 +160,158 @@ impl PanelView {
         .detach();
     }
 
+    /// Catálogo das ações no executor de fundo; skill sem `panel action` deixa a paleta sem ações.
+    fn carregar_acoes(&mut self, cx: &mut Context<Self>) {
+        cx.spawn(async move |this, cx| {
+            let r = cx
+                .background_executor()
+                .spawn(async { acoes::listar() })
+                .await;
+            let _ = this.update(cx, |v, cx| {
+                v.acoes = r.unwrap_or_default();
+                cx.notify();
+            });
+        })
+        .detach();
+    }
+
+    /// Ação escolhida na paleta: confirma antes quando o catálogo pede.
+    fn pedir_acao(&mut self, p: Pedido, cx: &mut Context<Self>) {
+        let Some(a) = self.acoes.iter().find(|a| a.id == p.id) else {
+            self.aviso_acao = Some((Tone::Warn, acoes::INDISPONIVEL.into(), None));
+            cx.notify();
+            return;
+        };
+        if a.pede_confirmacao(p.op.as_deref()) {
+            let rotulo = match &p.op {
+                Some(op) => format!("{}: {op}", a.rotulo),
+                None => a.rotulo.clone(),
+            };
+            self.confirmar = Some((p, rotulo));
+            cx.notify();
+            return;
+        }
+        self.lancar(p, cx);
+    }
+
+    /// Lança a ação no executor de fundo; o job entra na fila e a amostra é relida.
+    fn lancar(&mut self, p: Pedido, cx: &mut Context<Self>) {
+        self.confirmar = None;
+        self.aviso_acao = Some((Tone::Busy, format!("Lançando {}…", p.id), None));
+        cx.notify();
+        cx.spawn(async move |this, cx| {
+            let r = cx
+                .background_executor()
+                .spawn(async move { acoes::lancar(&p) })
+                .await;
+            let _ = this.update(cx, |v, cx| {
+                v.aviso_acao = Some(match r {
+                    Resultado::Lancada {
+                        job,
+                        titulo,
+                        exclusiva,
+                    } => (
+                        Tone::Ok,
+                        titulo,
+                        Some(if exclusiva {
+                            format!("Job {job} na fila, exclusivo no ambiente.")
+                        } else {
+                            format!("Job {job} na fila.")
+                        }),
+                    ),
+                    Resultado::Recusada { erro, codigo } => {
+                        (Tone::Bad, erro, Some(codigo).filter(|c| !c.is_empty()))
+                    }
+                    Resultado::Indisponivel => (Tone::Warn, acoes::INDISPONIVEL.into(), None),
+                    Resultado::Falhou(e) => (Tone::Bad, e, None),
+                });
+                v.recarregar(cx);
+                cx.notify();
+            });
+        })
+        .detach();
+    }
+
+    /// Lê o estado do Argos e o link do canvas web no executor de fundo.
+    fn consultar_argos(&mut self, cx: &mut Context<Self>) {
+        cx.spawn(async move |this, cx| {
+            let r = cx
+                .background_executor()
+                .spawn(async {
+                    let e = argos::consultar();
+                    let link = match e {
+                        argos::Estado::NaoInstalado => {
+                            argos::link_canvas(argos::url_painel().as_deref())
+                        }
+                        _ => String::new(),
+                    };
+                    (e, link)
+                })
+                .await;
+            let _ = this.update(cx, |v, cx| {
+                v.argos = Some(r);
+                cx.notify();
+            });
+        })
+        .detach();
+    }
+
+    /// Abre a tela `tela` da ferramenta `id`, criando a view dela na primeira vez.
+    fn ir_ferramenta(
+        &mut self,
+        id: &str,
+        tela: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Option<Rc<dyn Aberta>> {
+        let item = embutidas_vm::item(&self.grupos_ferramentas, id, tela)?;
+        let (fid, tid) = (item.ferramenta, item.tela);
+        let aberta = match self.abertas.iter().find(|(f, _)| *f == fid) {
+            Some((_, a)) => {
+                a.ir(tid, cx);
+                a.clone()
+            }
+            None => {
+                let r = self.registros.iter().find(|r| r.ligada.info.id == fid)?;
+                let cwd = std::env::current_dir().unwrap_or_default();
+                let a = (r.abrir)(self.env.clone(), cwd, tid, window, cx);
+                self.abertas.push((fid, a.clone()));
+                a
+            }
+        };
+        self.ferramenta = Some((fid, tid));
+        self.tela = None;
+        self.detalhe = None;
+        cx.notify();
+        Some(aberta)
+    }
+
+    /// Roda o comando `comando` da ferramenta `id`, levando o corpo para ela (na primeira tela, se ainda não aberta).
+    fn rodar(&mut self, id: &str, comando: &str, window: &mut Window, cx: &mut Context<Self>) {
+        if self.ferramenta.map(|f| f.0) == Some(id)
+            && let Some((_, a)) = self.abertas.iter().find(|(f, _)| *f == id)
+        {
+            let a = a.clone();
+            a.executar(comando, window, cx);
+            return;
+        }
+        let primeira = self
+            .grupos_ferramentas
+            .iter()
+            .flat_map(|g| g.itens.iter())
+            .find(|i| i.ferramenta == id)
+            .map(|i| i.tela);
+        if let Some(a) = primeira.and_then(|t| self.ir_ferramenta(id, t, window, cx)) {
+            a.executar(comando, window, cx);
+        }
+    }
+
     fn ir(&mut self, pagina: &'static Pagina, cx: &mut Context<Self>) {
         let releitura = pagina.id == "usage" && self.pagina.id != pagina.id;
+        self.ferramenta = None;
+        if pagina.id == vm::ARGOS {
+            self.consultar_argos(cx);
+        }
         self.pagina = pagina;
         self.detalhe = None;
         if releitura {
@@ -146,14 +325,32 @@ impl PanelView {
         let p = palette(cx);
         let recolhimento = cx.entity();
         let selecao = cx.entity();
-        let grupos = vm::GRUPOS.iter().map(|(titulo, paginas)| {
-            RailGroup::new(
+        let mut grupos: Vec<RailGroup> = Vec::new();
+        for (titulo, paginas) in vm::GRUPOS {
+            grupos.push(RailGroup::new(
                 *titulo,
                 paginas
                     .iter()
                     .map(|pg| RailItem::new(pg.rotulo).icon(pg.icone)),
-            )
-        });
+            ));
+            if *titulo == vm::FERRAMENTAS {
+                grupos.extend(self.grupos_ferramentas.iter().map(|g| {
+                    RailGroup::new(
+                        g.titulo,
+                        g.itens
+                            .iter()
+                            .map(|i| RailItem::new(i.rotulo.clone()).icon(i.icone)),
+                    )
+                }));
+            }
+        }
+        let selecionado = self
+            .ferramenta
+            .and_then(|(f, t)| embutidas_vm::item(&self.grupos_ferramentas, f, t))
+            .map_or_else(
+                || SharedString::from(self.pagina.rotulo),
+                |i| SharedString::from(i.rotulo.clone()),
+            );
         let projeto = self
             .dados
             .as_ref()
@@ -181,15 +378,29 @@ impl PanelView {
                     cx.notify();
                 });
             })
-            .on_select(move |rotulo, _, cx| {
-                if let Some(pg) = vm::por_rotulo(rotulo) {
-                    selecao.update(cx, |v, cx| v.ir(pg, cx));
-                }
+            .on_select(move |rotulo, window, cx| {
+                selecao.update(cx, |v, cx| {
+                    if let Some(pg) = vm::por_rotulo(rotulo) {
+                        v.ir(pg, cx);
+                    } else if let Some(i) = embutidas_vm::por_rotulo(&v.grupos_ferramentas, rotulo)
+                    {
+                        let (f, t) = (i.ferramenta, i.tela);
+                        v.ir_ferramenta(f, t, window, cx);
+                    }
+                });
             })
-            .selected(SharedString::from(self.pagina.rotulo))
+            .selected(selecionado)
     }
 
     fn corpo(&self, cx: &mut Context<Self>) -> gpui::AnyElement {
+        if let Some((f, _)) = self.ferramenta
+            && let Some((_, a)) = self.abertas.iter().find(|(id, _)| *id == f)
+        {
+            return a.elemento();
+        }
+        if self.pagina.id == vm::ARGOS {
+            return self.tela_argos(cx);
+        }
         if !self.pagina.pronta {
             return EmptyState::new(self.pagina.rotulo)
                 .hint("Esta página chega numa próxima versão do painel.")
@@ -281,11 +492,75 @@ impl PanelView {
             .child(tendencia(&p, &self.historico))
     }
 
+    fn tela_argos(&self, cx: &mut Context<Self>) -> gpui::AnyElement {
+        let p = palette(cx);
+        let cabeca = PageHeader::new("Argos").description(self.pagina.descricao);
+        let corpo: gpui::AnyElement = match &self.argos {
+            None => EmptyState::new("Procurando o Argos…").into_any_element(),
+            Some((argos::Estado::NaoInstalado, link)) => EmptyState::new("Argos não instalado")
+                .hint(format!(
+                    "Instale o {} para abrir o grafo aqui. Enquanto isso, o canvas está no painel web: {link}",
+                    argos::BINARIO
+                ))
+                .into_any_element(),
+            Some((e, _)) => {
+                let alvo = cx.entity();
+                let mut caixa = div().flex().flex_col().gap(px(8.0)).child(
+                    Button::new("argos-abrir", "Abrir o Argos")
+                        .primary()
+                        .on_click(move |_, _, cx| {
+                            let r = argos::abrir_janela();
+                            alvo.update(cx, |v, cx| {
+                                if let Err(e) = r {
+                                    v.aviso_acao = Some((Tone::Bad, e, None));
+                                    cx.notify();
+                                }
+                            });
+                        }),
+                );
+                let linhas: Vec<(String, String)> = match e {
+                    argos::Estado::Campos(c) => c.clone(),
+                    argos::Estado::Falhou(m) => vec![("erro".into(), m.clone())],
+                    _ => vec![(
+                        "estado".into(),
+                        "esta versão do Argos não tem --json".into(),
+                    )],
+                };
+                for (k, val) in linhas {
+                    caixa = caixa.child(
+                        div()
+                            .flex()
+                            .gap(px(12.0))
+                            .text_size(px(size::BODY))
+                            .child(div().w(px(160.0)).text_color(p.muted_fg).child(k))
+                            .child(val),
+                    );
+                }
+                caixa.into_any_element()
+            }
+        };
+        div()
+            .id("argos")
+            .flex_1()
+            .min_w_0()
+            .flex()
+            .flex_col()
+            .gap(px(24.0))
+            .p(px(24.0))
+            .child(cabeca)
+            .child(corpo)
+            .into_any_element()
+    }
+
     fn paleta(&self, cx: &mut Context<Self>) -> CommandPalette {
         let fechar = cx.entity();
         let ir = cx.entity();
-        CommandPalette::new("paleta", vm::itens_paleta())
-            .placeholder("Ir para uma página…")
+        let ligadas: Vec<_> = self.registros.iter().map(|r| r.ligada).collect();
+        let mut itens = vm::itens_paleta();
+        itens.extend(embutidas_vm::itens_paleta(&ligadas));
+        itens.extend(acoes::itens_paleta(&self.acoes));
+        CommandPalette::new("paleta", itens)
+            .placeholder("Ir para uma página, tela ou ação…")
             .on_close(move |window, cx| {
                 fechar.update(cx, |v, cx| {
                     v.paleta = false;
@@ -293,10 +568,24 @@ impl PanelView {
                     cx.notify();
                 });
             })
-            .on_pick(move |id, _, cx| {
-                if let Some(pg) = vm::destino_paleta(id) {
-                    ir.update(cx, |v, cx| v.ir(pg, cx));
-                }
+            .on_pick(move |id, window, cx| {
+                ir.update(cx, |v, cx| {
+                    if let Some(pg) = vm::destino_paleta(id) {
+                        v.ir(pg, cx);
+                    } else if let Some(d) = embutidas_vm::destino(id) {
+                        match d {
+                            Destino::Tela { ferramenta, tela } => {
+                                v.ir_ferramenta(ferramenta, tela, window, cx);
+                            }
+                            Destino::Comando {
+                                ferramenta,
+                                comando,
+                            } => v.rodar(ferramenta, comando, window, cx),
+                        }
+                    } else if let Some(p) = acoes::pedido(id) {
+                        v.pedir_acao(p, cx);
+                    }
+                });
             })
     }
 }
@@ -461,6 +750,39 @@ impl Render for PanelView {
             );
         if self.paleta {
             raiz = raiz.child(self.paleta(cx));
+        }
+        if let Some((tom, titulo, detalhe)) = &self.aviso_acao {
+            let fechar = cx.entity();
+            let mut t = Toast::new("aviso-acao", *tom, titulo.clone()).on_close(move |_, _, cx| {
+                fechar.update(cx, |v, cx| {
+                    v.aviso_acao = None;
+                    cx.notify();
+                });
+            });
+            if let Some(d) = detalhe {
+                t = t.description(d.clone());
+            }
+            raiz = raiz.child(div().absolute().bottom(px(40.0)).right(px(16.0)).child(t));
+        }
+        if let Some((pedido, rotulo)) = &self.confirmar {
+            let ok = cx.entity();
+            let nao = cx.entity();
+            let pedido = pedido.clone();
+            raiz = raiz.child(
+                Confirm::new(format!("{rotulo}?"))
+                    .detail("A ação roda no ambiente local como um job do painel.")
+                    .confirm_label("Lançar")
+                    .on_confirm(move |_, _, cx| {
+                        let p = pedido.clone();
+                        ok.update(cx, |v, cx| v.lancar(p, cx));
+                    })
+                    .on_cancel(move |_, _, cx| {
+                        nao.update(cx, |v, cx| {
+                            v.confirmar = None;
+                            cx.notify();
+                        });
+                    }),
+            );
         }
         if let Some(d) = &self.detalhe {
             let fechar = cx.entity();
