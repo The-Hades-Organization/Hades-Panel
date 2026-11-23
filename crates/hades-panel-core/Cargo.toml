@@ -1,0 +1,12 @@
+[package]
+name = "hades-panel-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+hades-core.workspace = true
+
+[lints]
+workspace = true

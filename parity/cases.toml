@@ -1,0 +1,4 @@
+# Matriz de paridade do painel: `hades panel dump <rota>` (TS, Hades-Skill) contra `hades-panel dump <rota>`.
+# O argv é o do binário; o lado TS ganha o subcomando `panel` por `ts_cmd = ["{skill}/src/cli.ts", "panel"]`. A skill
+# (--ts e HADES_SKILL_DIR) é a montada por parity/montar-skill.sh. Fixtures de `$D`, WORK_ROOT e /proc fictícias.
+# Os casos entram com os leitores: Configurações, Fila e loop, Orquestração, Consumo e Snapshot.
