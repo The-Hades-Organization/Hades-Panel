@@ -60,12 +60,15 @@ pub const GRUPOS: &[(&str, &[Pagina])] = &[
     (
         "Loop",
         &[
-            pagina(
-                "loop",
-                "Loop",
-                IconName::Repeat,
-                "Escalações, entregas, ações em 24 h, PRs, agentes e locks",
-            ),
+            Pagina {
+                pronta: true,
+                ..pagina(
+                    "loop",
+                    "Loop",
+                    IconName::Repeat,
+                    "Escalações, entregas, ações em 24 h, PRs, agentes e locks",
+                )
+            },
             pagina(
                 "orchestration",
                 "Orquestração",
@@ -78,18 +81,24 @@ pub const GRUPOS: &[(&str, &[Pagina])] = &[
                 IconName::ScanSearch,
                 "Revisões sobre PRs escolhidas; histórico das últimas 20",
             ),
-            pagina(
-                "queue",
-                "Fila de gates",
-                IconName::ListOrdered,
-                "Quem roda, quem espera, memória e journal da fila",
-            ),
-            pagina(
-                "usage",
-                "Consumo",
-                IconName::Coins,
-                "Tokens por papel, agente e dia, e a linha de base",
-            ),
+            Pagina {
+                pronta: true,
+                ..pagina(
+                    "queue",
+                    "Fila de gates",
+                    IconName::ListOrdered,
+                    "Quem roda, quem espera, memória e journal da fila",
+                )
+            },
+            Pagina {
+                pronta: true,
+                ..pagina(
+                    "usage",
+                    "Consumo",
+                    IconName::Coins,
+                    "Tokens por papel, agente e dia, e a linha de base",
+                )
+            },
         ],
     ),
     (

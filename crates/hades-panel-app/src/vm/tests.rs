@@ -3,14 +3,14 @@ use serde_json::json;
 use super::*;
 
 #[test]
-fn trilho_tem_os_cinco_grupos_e_so_a_visao_geral_pronta() {
+fn trilho_tem_os_cinco_grupos_e_as_paginas_prontas() {
     let grupos: Vec<&str> = GRUPOS.iter().map(|g| g.0).collect();
     assert_eq!(
         grupos,
         ["Ambiente", "Loop", "Operação", "Ferramentas", "Sistema"]
     );
     let prontas: Vec<&str> = paginas().filter(|p| p.pronta).map(|p| p.id).collect();
-    assert_eq!(prontas, [VISAO_GERAL]);
+    assert_eq!(prontas, [VISAO_GERAL, "loop", "queue", "usage"]);
 }
 
 #[test]

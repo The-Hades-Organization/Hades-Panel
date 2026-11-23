@@ -1,9 +1,11 @@
-//! App gpui do painel do Hades: casca com o trilho, a Visão geral, a barra de estado e a paleta Ctrl K. As outras
-//! páginas entram nos PRs seguintes e, até lá, mostram o estado vazio.
+//! App gpui do painel do Hades: casca com o trilho, a Visão geral, Loop, Fila de gates e Consumo, a barra de estado e
+//! a paleta Ctrl K. As outras páginas entram nos PRs seguintes e, até lá, mostram o estado vazio.
 
 pub mod service;
+pub mod telas;
 pub mod vm;
 
+use std::rc::Rc;
 use std::time::Duration;
 
 use gpui::{
@@ -37,6 +39,9 @@ pub struct PanelView {
     aviso: Option<String>,
     historico: Historico,
     tarefa: Tarefa,
+    detalhe: Option<telas::Detalhe>,
+    visao_fila: telas::fila::Visao,
+    historico_fila: telas::fila::HistoricoFila,
 }
 
 fn tone(t: Tom) -> Tone {
@@ -69,6 +74,9 @@ impl PanelView {
             aviso: None,
             historico: Historico::default(),
             tarefa: Tarefa::default(),
+            detalhe: None,
+            visao_fila: telas::fila::Visao::default(),
+            historico_fila: telas::fila::HistoricoFila::default(),
         };
         v.recarregar(cx);
         v
@@ -80,10 +88,11 @@ impl PanelView {
             return;
         };
         let env = self.env.clone();
+        let com_consumo = self.pagina.id == "usage";
         cx.spawn(async move |this, cx| {
             let r = cx
                 .background_executor()
-                .spawn(async move { service::carregar(env) })
+                .spawn(async move { service::carregar(env, com_consumo) })
                 .await;
             let _ = this.update(cx, |v, cx| {
                 if !v.tarefa.concluir(g) {
@@ -93,6 +102,7 @@ impl PanelView {
                     Ok(d) => {
                         v.historico
                             .registrar(vm::ponto(d.t_ms, &d.snapshot, &d.fila));
+                        v.historico_fila.registrar(d.t_ms, &d.fila);
                         v.dados = Some(d);
                         v.aviso = None;
                     }
@@ -120,7 +130,12 @@ impl PanelView {
     }
 
     fn ir(&mut self, pagina: &'static Pagina, cx: &mut Context<Self>) {
+        let releitura = pagina.id == "usage" && self.pagina.id != pagina.id;
         self.pagina = pagina;
+        self.detalhe = None;
+        if releitura {
+            self.recarregar(cx);
+        }
         cx.notify();
     }
 
@@ -179,7 +194,7 @@ impl PanelView {
                 .into_any_element();
         }
         match (&self.dados, &self.aviso) {
-            (Some(d), _) => self.visao_geral(d, cx).into_any_element(),
+            (Some(d), _) => self.tela(d, cx),
             (None, Some(e)) => EmptyState::new("Sem dados do Hades")
                 .hint(e.clone())
                 .fill()
@@ -187,6 +202,48 @@ impl PanelView {
             (None, None) => EmptyState::new("Lendo o estado do Hades…")
                 .fill()
                 .into_any_element(),
+        }
+    }
+
+    fn tela(&self, d: &Dados, cx: &mut Context<Self>) -> gpui::AnyElement {
+        let alvo = cx.entity();
+        let abrir: telas::loop_::AoAbrir = Rc::new(move |d, _, cx| {
+            alvo.update(cx, |v, cx| {
+                v.detalhe = Some(d);
+                cx.notify();
+            });
+        });
+        let descricao = self.pagina.descricao;
+        match self.pagina.id {
+            "loop" => {
+                let vm = telas::loop_::LoopVm::de(&d.fila, d.t_ms as f64 / 1000.0);
+                telas::loop_::tela(&vm, descricao, abrir, cx)
+            }
+            "queue" => {
+                let vm = telas::fila::FilaVm::de(&d.fila);
+                let alvo = cx.entity();
+                telas::fila::tela(
+                    telas::fila::Props {
+                        vm: &vm,
+                        historico: &self.historico_fila,
+                        visao: self.visao_fila,
+                        descricao,
+                        abrir,
+                        trocar_visao: Rc::new(move |visao, cx| {
+                            alvo.update(cx, |v, cx| {
+                                v.visao_fila = visao;
+                                cx.notify();
+                            });
+                        }),
+                    },
+                    cx,
+                )
+            }
+            "usage" => {
+                let e = telas::consumo::Estado::de(d.consumo.as_ref(), &d.limites);
+                telas::consumo::tela(&e, descricao, abrir, cx)
+            }
+            _ => self.visao_geral(d, cx).into_any_element(),
         }
     }
 
@@ -398,6 +455,15 @@ impl Render for PanelView {
             );
         if self.paleta {
             raiz = raiz.child(self.paleta(cx));
+        }
+        if let Some(d) = &self.detalhe {
+            let fechar = cx.entity();
+            raiz = raiz.child(telas::detalhe_sheet(d, cx, move |_, cx| {
+                fechar.update(cx, |v, cx| {
+                    v.detalhe = None;
+                    cx.notify();
+                });
+            }));
         }
         raiz
     }
