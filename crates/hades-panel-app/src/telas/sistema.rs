@@ -1,12 +1,15 @@
-//! Telas de leitura Documentação, Logs, Qualidade e Execuções (`pages/docs.tsx`, `logs.tsx`, `quality.tsx`,
-//! `jobs.tsx`): grupos de linhas sobre o `sistema_vm`; o documento ou o log abre num `Sheet`. Ligar e desligar
-//! regra e interromper execução ficam para o PR das ações.
+//! Telas de leitura Documentação, Logs, Qualidade, Execuções e Extensões (`pages/docs.tsx`, `logs.tsx`,
+//! `quality.tsx`, `jobs.tsx`, `extensoes.tsx`): grupos de linhas sobre o `sistema_vm`; o documento, o log ou o
+//! detalhe da extensão abre num `Sheet`. Ligar e desligar regra ou extensão e interromper execução ficam para o PR
+//! das ações.
 
 use gpui::{
     AnyElement, Context, IntoElement, ParentElement, Render, SharedString, Styled, Window, div, px,
 };
 use hades_core::Env;
-use hades_panel_core::{PanelEnv, amostra, docs, logs, qualidade};
+use std::process::Command;
+
+use hades_panel_core::{PanelEnv, amostra, config, docs, logs, qualidade};
 use hades_ui::components::{
     Button, ButtonKind, ButtonSize, Card, EmptyState, Page, PageHeader, StatusBadge,
 };
@@ -25,6 +28,7 @@ pub enum Leitura {
     Logs,
     Qualidade,
     Jobs,
+    Extensoes,
 }
 
 impl Leitura {
@@ -34,6 +38,7 @@ impl Leitura {
             "logs" => Self::Logs,
             "quality" => Self::Qualidade,
             "jobs" => Self::Jobs,
+            "extensoes" => Self::Extensoes,
             _ => return None,
         })
     }
@@ -44,6 +49,7 @@ impl Leitura {
             Self::Logs => "Logs",
             Self::Qualidade => "Qualidade",
             Self::Jobs => "Execuções",
+            Self::Extensoes => "Extensões",
         }
     }
 
@@ -55,6 +61,7 @@ impl Leitura {
                 "Regras de qualidade que entram nos briefs, na entrega, no inbox e na revisão"
             }
             Self::Jobs => "Ações disparadas pelo painel, com o log de cada uma",
+            Self::Extensoes => "Ferramentas externas: instalada, versão, saúde",
         }
     }
 
@@ -73,6 +80,10 @@ impl Leitura {
                 "Nenhuma execução ainda",
                 "As ações do ciclo disparadas no painel aparecem aqui, com o log.",
             ),
+            Self::Extensoes => (
+                "Nenhuma extensão declarada",
+                "A pasta extensions/ da skill não tem manifesto válido.",
+            ),
         }
     }
 
@@ -81,14 +92,35 @@ impl Leitura {
         self == Self::Jobs
     }
 
-    fn ler(self, e: &PanelEnv) -> Lista {
-        match self {
+    fn ler(self, e: &PanelEnv) -> Result<Lista, String> {
+        Ok(match self {
             Self::Docs => sistema_vm::docs(&docs::docs_index(e)),
             Self::Logs => sistema_vm::logs(&logs::log_files_json(e), logs::DOCS_ALLOWED),
             Self::Qualidade => sistema_vm::qualidade(&qualidade::quality_state(e)),
             Self::Jobs => sistema_vm::jobs(&amostra::snapshot(e)),
-        }
+            Self::Extensoes => {
+                let valores = config::state_json(e)
+                    .map(|c| sistema_vm::valores_config(&c))
+                    .unwrap_or_default();
+                sistema_vm::extensoes(&ext_list()?, &valores)
+            }
+        })
     }
+}
+
+/// Roda `hades ext list --json` (o mesmo JSON de `GET /api/extensions`). Bloqueia até ~5 s por extensão (versão e
+/// saúde): chame no executor de fundo.
+fn ext_list() -> Result<Value, String> {
+    let out = Command::new("hades")
+        .args(["ext", "list", "--json"])
+        .output()
+        .map_err(|e| format!("hades não encontrado no PATH: {e}"))?;
+    if !out.status.success() {
+        let erro = String::from_utf8_lossy(&out.stderr).trim().to_owned();
+        return Err(format!("hades ext list falhou: {erro}"));
+    }
+    serde_json::from_slice(&out.stdout)
+        .map_err(|e| format!("hades ext list não devolveu JSON: {e}"))
 }
 
 /// Texto do `Sheet`: o documento em markdown; o log como bloco de código.
@@ -103,6 +135,7 @@ fn abrir_texto(e: &PanelEnv, a: &Abrir) -> Result<Value, String> {
                 serde_json::json!({ "file": src, "text": format!("```\n{t}\n```") })
             })
             .map_err(|e| e.message),
+        Abrir::Texto(t) => Ok(serde_json::json!({ "file": "", "text": t })),
     }
 }
 
@@ -138,7 +171,7 @@ impl SistemaView {
         cx.spawn(async move |this, cx| {
             let r = cx
                 .background_executor()
-                .spawn(async move { panel_env(env).map(|e| leitura.ler(&e)) })
+                .spawn(async move { panel_env(env).and_then(|e| leitura.ler(&e)) })
                 .await;
             let _ = this.update(cx, |v, cx| {
                 if v.tarefa.concluir(g) {

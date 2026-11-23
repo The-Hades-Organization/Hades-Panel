@@ -90,3 +90,68 @@ fn jobs_resume_e_abre_o_log_do_job() {
     assert_eq!(vazio.linha, "nada rodando · 0 no histórico");
     assert!(vazio.grupos.is_empty());
 }
+
+#[test]
+fn extensoes_resume_e_monta_o_detalhe() {
+    let v = json!({ "version": 1, "extensions": [
+        { "name": "herdr", "description": "Multiplexador", "capabilities": ["canvas.terminal"], "enabled": true,
+          "installed": true, "path": "/bin/herdr", "version": "0.9.5", "minVersion": "0.9.0", "problems": [],
+          "install": "Instale o herdr.", "configKeys": ["HADES_HERDR_BIN"], "enableKey": "HADES_EXT_HERDR" },
+        { "name": "mark", "description": "Voz", "capabilities": ["voice", "outra"], "enabled": true,
+          "installed": true, "path": "/bin/mark", "version": "0.1.0", "minVersion": "0.2.0",
+          "problems": [{ "code": "ext.version-below-min", "field": "version.min", "message": "versão 0.1.0 abaixo da mínima 0.2.0" }],
+          "install": "Instale o Mark.", "configKeys": [], "enableKey": "HADES_EXT_MARK" },
+        { "name": "cardinal", "description": "Diagramas", "capabilities": [], "enabled": false,
+          "installed": false, "path": null, "version": null, "minVersion": null, "problems": [],
+          "install": "Compile.", "configKeys": ["HADES_CARDINAL_BIN", "HADES_CARDINAL_WEB"], "enableKey": "HADES_EXT_CARDINAL" }
+    ]});
+    let valores = valores_config(&json!({ "items": [
+        { "key": "HADES_HERDR_BIN", "value": "herdr" },
+        { "key": "HADES_CARDINAL_WEB", "value": "" }
+    ]}));
+    let l = extensoes(&v, &valores);
+    assert_eq!(
+        l.linha,
+        "2 de 3 ligadas · 1 com problema · ferramentas externas, não plugins"
+    );
+    let h = &l.grupos[0].linhas;
+    assert_eq!(h[0].titulo, "herdr — Multiplexador");
+    assert_eq!(h[0].detalhe, "versão 0.9.5 (mínima 0.9.0) · /bin/herdr");
+    assert_eq!(h[0].selo, Some(("Ligada · instalada".into(), Tom::Ok)));
+    assert_eq!(
+        h[1].selo,
+        Some(("Ligada · com problema".into(), Tom::Aviso))
+    );
+    assert_eq!(
+        h[2].selo,
+        Some(("Desligada · não instalada".into(), Tom::Parado))
+    );
+    assert_eq!(h[2].detalhe, "versão desconhecida (sem versão mínima)");
+    let Some(Abrir::Texto(t)) = &h[0].abre else {
+        panic!("herdr abre o detalhe")
+    };
+    assert!(t.contains("**Capacidades:** terminal no canvas"));
+    assert!(t.contains("- `HADES_HERDR_BIN` = `herdr`"));
+    let Some(Abrir::Texto(t)) = &h[1].abre else {
+        panic!("mark abre o detalhe")
+    };
+    assert!(t.contains("voz · outra"));
+    assert!(t.contains("- versão 0.1.0 abaixo da mínima 0.2.0 `ext.version-below-min`"));
+    assert!(t.contains("Sem chaves próprias."));
+    let Some(Abrir::Texto(t)) = &h[2].abre else {
+        panic!("cardinal abre o detalhe")
+    };
+    assert!(t.contains("**Capacidades:** nenhuma"));
+    assert!(t.contains("- `HADES_CARDINAL_BIN` = (sem valor)"));
+    assert!(t.contains("- `HADES_CARDINAL_WEB` = (vazio)"));
+}
+
+#[test]
+fn extensoes_vazia_sem_grupo() {
+    let l = extensoes(&json!({ "version": 1, "extensions": [] }), &json!(null));
+    assert_eq!(
+        l.linha,
+        "0 de 0 ligadas · ferramentas externas, não plugins"
+    );
+    assert!(l.grupos.is_empty());
+}

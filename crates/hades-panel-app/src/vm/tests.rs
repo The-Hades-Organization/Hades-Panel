@@ -22,6 +22,7 @@ fn trilho_tem_os_cinco_grupos_e_as_paginas_prontas() {
             "jobs",
             "logs",
             ARGOS,
+            "extensoes",
             "quality",
             "config",
             "docs"

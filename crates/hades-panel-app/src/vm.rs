@@ -163,12 +163,15 @@ pub const GRUPOS: &[(&str, &[Pagina])] = &[
                 IconName::Puzzle,
                 "Listar, ligar e desligar plugins",
             ),
-            pagina(
-                "extensoes",
-                "Extensões",
-                IconName::Plug,
-                "Ferramentas externas: instalada, versão, saúde",
-            ),
+            Pagina {
+                pronta: true,
+                ..pagina(
+                    "extensoes",
+                    "Extensões",
+                    IconName::Plug,
+                    "Ferramentas externas: instalada, versão, saúde",
+                )
+            },
             Pagina {
                 pronta: true,
                 ..pagina(

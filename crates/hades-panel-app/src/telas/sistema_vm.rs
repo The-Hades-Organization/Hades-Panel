@@ -1,5 +1,6 @@
-//! View-model das telas de leitura do grupo Sistema e Ambiente (Documentação, Logs, Qualidade e Execuções): o JSON
-//! das rotas `docs`, `log-files`, `quality` e do `jobs` da amostra, vira grupos de linhas que abrem um arquivo.
+//! View-model das telas de leitura do grupo Sistema e Ambiente (Documentação, Logs, Qualidade, Execuções e Extensões):
+//! o JSON das rotas `docs`, `log-files`, `quality`, do `jobs` da amostra e do `hades ext list --json` vira grupos de
+//! linhas que abrem um arquivo.
 
 use serde_json::Value;
 
@@ -14,11 +15,13 @@ pub struct Linha {
     pub abre: Option<Abrir>,
 }
 
-/// O que a linha abre: um documento da skill (`doc`) ou uma fonte de log (`log`).
+/// O que a linha abre: um documento da skill (`doc`), uma fonte de log (`log`) ou um texto já montado (`Texto`, em
+/// markdown).
 #[derive(Clone, Debug, PartialEq)]
 pub enum Abrir {
     Doc(String),
     Log(String),
+    Texto(String),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -228,3 +231,146 @@ pub fn jobs(snapshot: &Value) -> Lista {
 #[cfg(test)]
 #[path = "sistema_vm_tests.rs"]
 mod tests;
+
+/// `EXT_CAP` de `pages/extensoes.tsx`: capacidade do manifesto em palavras.
+fn capacidade(c: &str) -> &str {
+    match c {
+        "canvas.terminal" => "terminal no canvas",
+        "canvas.diagram" => "diagrama no canvas",
+        "voice" => "voz",
+        "window" => "janela do desktop",
+        _ => c,
+    }
+}
+
+/// `extWord` e o selo ligada/desligada de `pages/extensoes.tsx`, num selo só.
+fn selo_extensao(e: &Value) -> (String, Tom) {
+    let ligada = e["enabled"].as_bool().unwrap_or(false);
+    let instalada = e["installed"].as_bool().unwrap_or(false);
+    let problemas = !arr(&e["problems"]).is_empty();
+    let (estado, tom) = if !instalada {
+        ("não instalada", Tom::Parado)
+    } else if problemas {
+        ("com problema", Tom::Aviso)
+    } else {
+        ("instalada", Tom::Ok)
+    };
+    let tom = if ligada { tom } else { Tom::Parado };
+    let chave = if ligada { "Ligada" } else { "Desligada" };
+    (format!("{chave} · {estado}"), tom)
+}
+
+fn versao_extensao(e: &Value) -> String {
+    let versao = e["version"].as_str().unwrap_or("desconhecida");
+    match e["minVersion"].as_str() {
+        Some(m) => format!("versão {versao} (mínima {m})"),
+        None => format!("versão {versao} (sem versão mínima)"),
+    }
+}
+
+/// O detalhe do `Sheet`: o que a linha de `ExtRow` mostra, com as chaves próprias e o valor efetivo de cada uma.
+fn texto_extensao(e: &Value, valores: &Value) -> String {
+    let mut t = format!("{}\n\n{}", s(e, "description"), versao_extensao(e));
+    if let Some(p) = e["path"].as_str() {
+        t.push_str(&format!(" · `{p}`"));
+    }
+    let caps: Vec<&str> = arr(&e["capabilities"])
+        .iter()
+        .filter_map(Value::as_str)
+        .map(capacidade)
+        .collect();
+    let caps = if caps.is_empty() {
+        "nenhuma".to_owned()
+    } else {
+        caps.join(" · ")
+    };
+    t.push_str(&format!("\n\n**Capacidades:** {caps}"));
+    let problemas = arr(&e["problems"]);
+    if !problemas.is_empty() {
+        t.push_str("\n\n## Problemas\n");
+        for p in problemas {
+            t.push_str(&format!("\n- {} `{}`", s(p, "message"), s(p, "code")));
+        }
+    }
+    t.push_str(&format!(
+        "\n\n## Instalar (passo seu)\n\n{}\n\nA Hades não executa a instalação: copie e rode você mesmo.",
+        s(e, "install")
+    ));
+    let chaves: Vec<&str> = arr(&e["configKeys"])
+        .iter()
+        .filter_map(Value::as_str)
+        .collect();
+    if chaves.is_empty() {
+        t.push_str("\n\nSem chaves próprias.");
+    } else {
+        t.push_str("\n\n## Chaves próprias (edite em Configurações)\n");
+        for k in chaves {
+            let v = match valores.get(k).and_then(Value::as_str) {
+                None => "(sem valor)".to_owned(),
+                Some("") => "(vazio)".to_owned(),
+                Some(v) => format!("`{v}`"),
+            };
+            t.push_str(&format!("\n- `{k}` = {v}"));
+        }
+    }
+    t
+}
+
+/// Os valores efetivos (`items[].key` → `value`) do `config` do painel, para as chaves próprias das extensões.
+pub fn valores_config(config: &Value) -> Value {
+    let m = arr(&config["items"])
+        .iter()
+        .filter_map(|i| Some((i["key"].as_str()?.to_owned(), i.get("value")?.clone())))
+        .collect();
+    Value::Object(m)
+}
+
+/// `hades ext list --json` (o mesmo JSON de `GET /api/extensions`): uma linha por extensão, que abre o detalhe.
+/// `valores` é o mapa chave → valor efetivo de [`valores_config`].
+pub fn extensoes(v: &Value, valores: &Value) -> Lista {
+    let lista = arr(&v["extensions"]);
+    let ligadas = lista
+        .iter()
+        .filter(|e| e["enabled"].as_bool() == Some(true))
+        .count();
+    let com_problema = lista
+        .iter()
+        .filter(|e| {
+            e["enabled"].as_bool() == Some(true)
+                && e["installed"].as_bool() == Some(true)
+                && !arr(&e["problems"]).is_empty()
+        })
+        .count();
+    let mut partes = vec![format!("{ligadas} de {} ligadas", lista.len())];
+    if com_problema > 0 {
+        partes.push(format!("{com_problema} com problema"));
+    }
+    partes.push("ferramentas externas, não plugins".to_owned());
+    let linhas: Vec<Linha> = lista
+        .iter()
+        .map(|e| {
+            let mut detalhe = versao_extensao(e);
+            if let Some(p) = e["path"].as_str() {
+                detalhe = format!("{detalhe} · {p}");
+            }
+            Linha {
+                titulo: format!("{} — {}", s(e, "name"), s(e, "description")),
+                detalhe,
+                selo: Some(selo_extensao(e)),
+                abre: Some(Abrir::Texto(texto_extensao(e, valores))),
+            }
+        })
+        .collect();
+    let grupos = if linhas.is_empty() {
+        Vec::new()
+    } else {
+        vec![Grupo {
+            titulo: "Extensões".to_owned(),
+            linhas,
+        }]
+    };
+    Lista {
+        linha: partes.join(" · "),
+        grupos,
+    }
+}
