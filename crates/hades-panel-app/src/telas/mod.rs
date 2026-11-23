@@ -1,10 +1,18 @@
 //! Telas do painel além da Visão geral: cada uma num módulo com o view-model puro e a view gpui dela.
 
+pub mod config;
+pub mod config_vm;
 pub mod consumo;
 pub mod fila;
 pub mod loop_;
+pub mod orquestracao;
+pub mod orquestracao_vm;
+pub mod revisoes;
+pub mod revisoes_vm;
+mod tela;
 mod ui;
 
+pub use tela::{Arquivo, RECARGA, Tela, arquivo_sheet, panel_env, recarga_periodica, tone};
 pub use ui::{Detalhe, detalhe_sheet};
 
 use serde_json::Value;

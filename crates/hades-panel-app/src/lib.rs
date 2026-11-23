@@ -42,6 +42,7 @@ pub struct PanelView {
     detalhe: Option<telas::Detalhe>,
     visao_fila: telas::fila::Visao,
     historico_fila: telas::fila::HistoricoFila,
+    tela: Option<telas::Tela>,
 }
 
 fn tone(t: Tom) -> Tone {
@@ -77,6 +78,7 @@ impl PanelView {
             detalhe: None,
             visao_fila: telas::fila::Visao::default(),
             historico_fila: telas::fila::HistoricoFila::default(),
+            tela: None,
         };
         v.recarregar(cx);
         v
@@ -136,6 +138,7 @@ impl PanelView {
         if releitura {
             self.recarregar(cx);
         }
+        self.tela = telas::Tela::abrir(pagina.id, &self.env, cx);
         cx.notify();
     }
 
@@ -192,6 +195,9 @@ impl PanelView {
                 .hint("Esta página chega numa próxima versão do painel.")
                 .fill()
                 .into_any_element();
+        }
+        if let Some(t) = &self.tela {
+            return t.elemento();
         }
         match (&self.dados, &self.aviso) {
             (Some(d), _) => self.tela(d, cx),

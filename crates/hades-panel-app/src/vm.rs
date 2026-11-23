@@ -69,18 +69,24 @@ pub const GRUPOS: &[(&str, &[Pagina])] = &[
                     "Escalações, entregas, ações em 24 h, PRs, agentes e locks",
                 )
             },
-            pagina(
-                "orchestration",
-                "Orquestração",
-                IconName::Workflow,
-                "Agentes do orquestrador, perguntas ao dono, relatórios e PRs de consolidação",
-            ),
-            pagina(
-                "reviews",
-                "Revisões",
-                IconName::ScanSearch,
-                "Revisões sobre PRs escolhidas; histórico das últimas 20",
-            ),
+            Pagina {
+                pronta: true,
+                ..pagina(
+                    "orchestration",
+                    "Orquestração",
+                    IconName::Workflow,
+                    "Agentes do orquestrador, perguntas ao dono, relatórios e PRs de consolidação",
+                )
+            },
+            Pagina {
+                pronta: true,
+                ..pagina(
+                    "reviews",
+                    "Revisões",
+                    IconName::ScanSearch,
+                    "Revisões sobre PRs escolhidas; histórico das últimas 20",
+                )
+            },
             Pagina {
                 pronta: true,
                 ..pagina(
@@ -181,12 +187,15 @@ pub const GRUPOS: &[(&str, &[Pagina])] = &[
                 IconName::Plug,
                 "Ferramentas externas: instalada, versão, saúde",
             ),
-            pagina(
-                "config",
-                "Configurações",
-                IconName::SlidersHorizontal,
-                "Memória, builds, subida, plantão, túnel, painel e o que o projeto declara",
-            ),
+            Pagina {
+                pronta: true,
+                ..pagina(
+                    "config",
+                    "Configurações",
+                    IconName::SlidersHorizontal,
+                    "Memória, builds, subida, plantão, túnel, painel e o que o projeto declara",
+                )
+            },
             pagina(
                 "docs",
                 "Documentação",
@@ -338,7 +347,7 @@ pub fn decimal(v: f64) -> String {
     format!("{v:.1}").replace('.', ",")
 }
 
-fn plural(n: usize, um: &str, varios: &str) -> String {
+pub fn plural(n: usize, um: &str, varios: &str) -> String {
     if n == 1 {
         format!("{n} {um}")
     } else {

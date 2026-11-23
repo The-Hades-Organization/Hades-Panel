@@ -10,7 +10,18 @@ fn trilho_tem_os_cinco_grupos_e_as_paginas_prontas() {
         ["Ambiente", "Loop", "Operação", "Ferramentas", "Sistema"]
     );
     let prontas: Vec<&str> = paginas().filter(|p| p.pronta).map(|p| p.id).collect();
-    assert_eq!(prontas, [VISAO_GERAL, "loop", "queue", "usage"]);
+    assert_eq!(
+        prontas,
+        [
+            VISAO_GERAL,
+            "loop",
+            "orchestration",
+            "reviews",
+            "queue",
+            "usage",
+            "config"
+        ]
+    );
 }
 
 #[test]
