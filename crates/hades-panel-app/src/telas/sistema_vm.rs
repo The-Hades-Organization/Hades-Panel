@@ -21,7 +21,13 @@ pub struct Linha {
 pub enum Abrir {
     Doc(String),
     Log(String),
+    /// Texto já pronto em markdown (passo do onboarding).
     Texto(String),
+    /// Leitura de um pane do herdr.
+    Pane {
+        sessao: String,
+        id: String,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]

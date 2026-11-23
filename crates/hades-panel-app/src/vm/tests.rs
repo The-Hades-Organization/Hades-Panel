@@ -14,18 +14,23 @@ fn trilho_tem_os_cinco_grupos_e_as_paginas_prontas() {
         prontas,
         [
             VISAO_GERAL,
+            "code",
             "loop",
             "orchestration",
             "reviews",
             "queue",
             "usage",
+            "herdr",
             "jobs",
             "logs",
+            "notify",
             ARGOS,
+            "plugins",
             "extensoes",
             "quality",
             "config",
-            "docs"
+            "onboard",
+            "docs",
         ]
     );
 }

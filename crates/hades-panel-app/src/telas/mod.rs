@@ -1,5 +1,6 @@
 //! Telas do painel além da Visão geral: cada uma num módulo com o view-model puro e a view gpui dela.
 
+pub mod ambiente_vm;
 pub mod config;
 pub mod config_vm;
 pub mod consumo;

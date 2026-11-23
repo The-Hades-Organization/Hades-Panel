@@ -54,12 +54,15 @@ pub const GRUPOS: &[(&str, &[Pagina])] = &[
                     "Estado, ações principais e tendência da última hora",
                 )
             },
-            pagina(
-                "code",
-                "Branch e PRs",
-                IconName::GitBranch,
-                "O que entra na branch local: base do projeto ou base + PRs",
-            ),
+            Pagina {
+                pronta: true,
+                ..pagina(
+                    "code",
+                    "Branch e PRs",
+                    IconName::GitBranch,
+                    "O que entra na branch local: base do projeto ou base + PRs",
+                )
+            },
         ],
     ),
     (
@@ -115,12 +118,15 @@ pub const GRUPOS: &[(&str, &[Pagina])] = &[
     (
         "Operação",
         &[
-            pagina(
-                "herdr",
-                "Herdr",
-                IconName::TerminalSquare,
-                "Workspaces e agentes do herdr",
-            ),
+            Pagina {
+                pronta: true,
+                ..pagina(
+                    "herdr",
+                    "Herdr",
+                    IconName::TerminalSquare,
+                    "Workspaces e agentes do herdr",
+                )
+            },
             Pagina {
                 pronta: true,
                 ..pagina(
@@ -139,12 +145,15 @@ pub const GRUPOS: &[(&str, &[Pagina])] = &[
                     "Serviços, builds, processos, containers e documentos do ambiente",
                 )
             },
-            pagina(
-                "notify",
-                "Notificações",
-                IconName::Bell,
-                "Canais, vigia e as últimas 50 notificações",
-            ),
+            Pagina {
+                pronta: true,
+                ..pagina(
+                    "notify",
+                    "Notificações",
+                    IconName::Bell,
+                    "Canais, vigia e as últimas 50 notificações",
+                )
+            },
         ],
     ),
     (
@@ -157,12 +166,15 @@ pub const GRUPOS: &[(&str, &[Pagina])] = &[
     (
         "Sistema",
         &[
-            pagina(
-                "plugins",
-                "Plugins",
-                IconName::Puzzle,
-                "Listar, ligar e desligar plugins",
-            ),
+            Pagina {
+                pronta: true,
+                ..pagina(
+                    "plugins",
+                    "Plugins",
+                    IconName::Puzzle,
+                    "Listar, ligar e desligar plugins",
+                )
+            },
             Pagina {
                 pronta: true,
                 ..pagina(
@@ -188,6 +200,15 @@ pub const GRUPOS: &[(&str, &[Pagina])] = &[
                     "Configurações",
                     IconName::SlidersHorizontal,
                     "Memória, builds, subida, plantão, túnel, painel e o que o projeto declara",
+                )
+            },
+            Pagina {
+                pronta: true,
+                ..pagina(
+                    "onboard",
+                    "Onboarding",
+                    IconName::CircleCheck,
+                    "O que falta configurar, recurso por recurso",
                 )
             },
             Pagina {

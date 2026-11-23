@@ -1,7 +1,6 @@
-//! Telas de leitura Documentação, Logs, Qualidade, Execuções e Extensões (`pages/docs.tsx`, `logs.tsx`,
-//! `quality.tsx`, `jobs.tsx`, `extensoes.tsx`): grupos de linhas sobre o `sistema_vm`; o documento, o log ou o
-//! detalhe da extensão abre num `Sheet`. Ligar e desligar regra ou extensão e interromper execução ficam para o PR
-//! das ações.
+//! Telas de leitura dos grupos Ambiente, Operação e Sistema (`pages/docs.tsx`, `logs.tsx`, `quality.tsx`, `jobs.tsx`,
+//! `extensoes.tsx`, `code.tsx`, `notify.tsx`, `onboard.tsx`, `plugins.tsx`, `herdr.tsx`): grupos de linhas sobre o
+//! `sistema_vm`; o documento, o log, a extensão ou o pane abre num `Sheet`. Ações que escrevem ficam no painel web.
 
 use gpui::{
     AnyElement, Context, IntoElement, ParentElement, Render, SharedString, Styled, Window, div, px,
@@ -9,7 +8,7 @@ use gpui::{
 use hades_core::Env;
 use std::process::Command;
 
-use hades_panel_core::{PanelEnv, amostra, config, docs, logs, qualidade};
+use hades_panel_core::{PanelEnv, ambiente, amostra, config, docs, herdr, logs, qualidade};
 use hades_ui::components::{
     Button, ButtonKind, ButtonSize, Card, EmptyState, Page, PageHeader, StatusBadge,
 };
@@ -17,6 +16,7 @@ use hades_ui::palette;
 use hades_ui::tokens::{FONT_MONO, size};
 use serde_json::Value;
 
+use super::ambiente_vm;
 use super::sistema_vm::{self, Abrir, Lista};
 use super::{Arquivo, arquivo_sheet, panel_env, recarga_periodica, tone};
 use crate::vm::{Tarefa, plural};
@@ -29,6 +29,11 @@ pub enum Leitura {
     Qualidade,
     Jobs,
     Extensoes,
+    Code,
+    Notify,
+    Onboard,
+    Plugins,
+    Herdr,
 }
 
 impl Leitura {
@@ -39,6 +44,11 @@ impl Leitura {
             "quality" => Self::Qualidade,
             "jobs" => Self::Jobs,
             "extensoes" => Self::Extensoes,
+            "code" => Self::Code,
+            "notify" => Self::Notify,
+            "onboard" => Self::Onboard,
+            "plugins" => Self::Plugins,
+            "herdr" => Self::Herdr,
             _ => return None,
         })
     }
@@ -50,6 +60,11 @@ impl Leitura {
             Self::Qualidade => "Qualidade",
             Self::Jobs => "Execuções",
             Self::Extensoes => "Extensões",
+            Self::Code => "Branch e PRs",
+            Self::Notify => "Notificações",
+            Self::Onboard => "Onboarding",
+            Self::Plugins => "Plugins",
+            Self::Herdr => "Herdr",
         }
     }
 
@@ -62,6 +77,11 @@ impl Leitura {
             }
             Self::Jobs => "Ações disparadas pelo painel, com o log de cada uma",
             Self::Extensoes => "Ferramentas externas: instalada, versão, saúde",
+            Self::Code => "A base do hades/local, as PRs incluídas e os conflitos do rebuild",
+            Self::Notify => "Canais, vigia e as últimas 50 notificações",
+            Self::Onboard => "O que falta configurar, recurso por recurso",
+            Self::Plugins => "Plugins instalados; ligar e desligar ficam no painel web",
+            Self::Herdr => "Sessões, workspaces e panes do herdr, só leitura",
         }
     }
 
@@ -84,12 +104,23 @@ impl Leitura {
                 "Nenhuma extensão declarada",
                 "A pasta extensions/ da skill não tem manifesto válido.",
             ),
+            Self::Code => (
+                "Sem dados do rebuild",
+                "A branch local ainda não foi montada.",
+            ),
+            Self::Notify => ("Sem notificações", "O notify.sh não devolveu estado."),
+            Self::Onboard => (
+                "Nada a configurar",
+                "Nenhum recurso declarado pelo onboarding.",
+            ),
+            Self::Plugins => ("Nenhum plugin", "Nenhum pack instalado."),
+            Self::Herdr => ("Nenhum pane", "A sessão do herdr não tem workspaces."),
         }
     }
 
-    /// Só Execuções muda sozinha enquanto a tela está aberta.
+    /// Execuções e Herdr mudam sozinhas enquanto a tela está aberta.
     fn viva(self) -> bool {
-        self == Self::Jobs
+        matches!(self, Self::Jobs | Self::Herdr)
     }
 
     fn ler(self, e: &PanelEnv) -> Result<Lista, String> {
@@ -104,6 +135,11 @@ impl Leitura {
                     .unwrap_or_default();
                 sistema_vm::extensoes(&ext_list()?, &valores)
             }
+            Self::Code => ambiente_vm::code(&amostra::snapshot(e)["branch"]),
+            Self::Notify => ambiente_vm::notify(&ambiente::notify_status(e)?),
+            Self::Onboard => ambiente_vm::onboard(&ambiente::onboard_status(e, true)?),
+            Self::Plugins => ambiente_vm::plugins(&ambiente::plugins_list(e)?),
+            Self::Herdr => return ambiente_vm::herdr(&herdr::overview(e, None)),
         })
     }
 }
@@ -136,6 +172,8 @@ fn abrir_texto(e: &PanelEnv, a: &Abrir) -> Result<Value, String> {
             })
             .map_err(|e| e.message),
         Abrir::Texto(t) => Ok(serde_json::json!({ "file": "", "text": t })),
+        Abrir::Pane { sessao, id } => herdr::pane_read(e, sessao, id)
+            .map(|t| serde_json::json!({ "file": id, "text": format!("```\n{t}\n```") })),
     }
 }
 
