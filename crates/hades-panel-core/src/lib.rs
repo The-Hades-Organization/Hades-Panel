@@ -3,10 +3,13 @@
 pub mod amostra;
 pub mod config;
 pub mod consumo;
+pub mod docs;
 pub mod env;
 pub mod fila;
 pub mod leitura;
+pub mod logs;
 pub mod orquestracao;
+pub mod qualidade;
 pub mod revisoes;
 pub mod vivo;
 

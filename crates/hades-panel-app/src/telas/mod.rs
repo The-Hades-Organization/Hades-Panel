@@ -9,6 +9,8 @@ pub mod orquestracao;
 pub mod orquestracao_vm;
 pub mod revisoes;
 pub mod revisoes_vm;
+pub mod sistema;
+pub mod sistema_vm;
 mod tela;
 mod ui;
 

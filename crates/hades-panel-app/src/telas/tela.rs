@@ -1,4 +1,4 @@
-//! Telas com entidade própria (Orquestração, Revisões, Configurações): criadas ao entrar na página e descartadas
+//! Telas com entidade própria (Orquestração, Revisões, Configurações e as de leitura do `sistema`): criadas ao entrar na página e descartadas
 //! ao sair, com o view-model puro ao lado (`<tela>_vm.rs`).
 
 use std::time::Duration;
@@ -38,6 +38,7 @@ pub enum Tela {
     Orquestracao(Entity<super::orquestracao::OrquestracaoView>),
     Revisoes(Entity<super::revisoes::RevisoesView>),
     Config(Entity<super::config::ConfigView>),
+    Sistema(Entity<super::sistema::SistemaView>),
 }
 
 impl Tela {
@@ -50,7 +51,10 @@ impl Tela {
             }
             "reviews" => Self::Revisoes(cx.new(|cx| super::revisoes::RevisoesView::new(env, cx))),
             "config" => Self::Config(cx.new(|cx| super::config::ConfigView::new(env, cx))),
-            _ => return None,
+            _ => {
+                let l = super::sistema::Leitura::de(id)?;
+                Self::Sistema(cx.new(|cx| super::sistema::SistemaView::new(env, l, cx)))
+            }
         })
     }
 
@@ -59,6 +63,7 @@ impl Tela {
             Self::Orquestracao(e) => e.clone().into_any_element(),
             Self::Revisoes(e) => e.clone().into_any_element(),
             Self::Config(e) => e.clone().into_any_element(),
+            Self::Sistema(e) => e.clone().into_any_element(),
         }
     }
 }

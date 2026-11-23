@@ -19,8 +19,12 @@ fn trilho_tem_os_cinco_grupos_e_as_paginas_prontas() {
             "reviews",
             "queue",
             "usage",
+            "jobs",
+            "logs",
             ARGOS,
-            "config"
+            "quality",
+            "config",
+            "docs"
         ]
     );
 }

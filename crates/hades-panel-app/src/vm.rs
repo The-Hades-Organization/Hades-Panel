@@ -121,18 +121,24 @@ pub const GRUPOS: &[(&str, &[Pagina])] = &[
                 IconName::TerminalSquare,
                 "Workspaces e agentes do herdr",
             ),
-            pagina(
-                "jobs",
-                "Execuções",
-                IconName::SquareTerminal,
-                "Ações disparadas pelo painel, com log ao vivo",
-            ),
-            pagina(
-                "logs",
-                "Logs",
-                IconName::ScrollText,
-                "Serviços, builds, processos, containers e documentos do ambiente",
-            ),
+            Pagina {
+                pronta: true,
+                ..pagina(
+                    "jobs",
+                    "Execuções",
+                    IconName::SquareTerminal,
+                    "Ações disparadas pelo painel, com log ao vivo",
+                )
+            },
+            Pagina {
+                pronta: true,
+                ..pagina(
+                    "logs",
+                    "Logs",
+                    IconName::ScrollText,
+                    "Serviços, builds, processos, containers e documentos do ambiente",
+                )
+            },
             pagina(
                 "notify",
                 "Notificações",
@@ -166,18 +172,30 @@ pub const GRUPOS: &[(&str, &[Pagina])] = &[
             Pagina {
                 pronta: true,
                 ..pagina(
+                    "quality",
+                    "Qualidade",
+                    IconName::ShieldCheck,
+                    "Regras de qualidade: ligue e desligue o que entra nos briefs, na entrega, no inbox e na revisão",
+                )
+            },
+            Pagina {
+                pronta: true,
+                ..pagina(
                     "config",
                     "Configurações",
                     IconName::SlidersHorizontal,
                     "Memória, builds, subida, plantão, túnel, painel e o que o projeto declara",
                 )
             },
-            pagina(
-                "docs",
-                "Documentação",
-                IconName::BookOpen,
-                "SKILL.md, referências e changelog",
-            ),
+            Pagina {
+                pronta: true,
+                ..pagina(
+                    "docs",
+                    "Documentação",
+                    IconName::BookOpen,
+                    "SKILL.md, referências e changelog",
+                )
+            },
         ],
     ),
 ];

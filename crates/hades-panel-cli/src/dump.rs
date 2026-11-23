@@ -4,7 +4,7 @@ use hades_panel_core::PanelEnv;
 use hades_panel_core::config::{self, ExportOptions};
 use hades_panel_core::leitura::PanelError;
 use hades_panel_core::vivo::{Sistema, Vivo};
-use hades_panel_core::{consumo, orquestracao, revisoes};
+use hades_panel_core::{consumo, docs, logs, orquestracao, qualidade, revisoes};
 use serde_json::{Value, json};
 
 /// Rotas com leitor no Rust. As rotas que terminam em `/` levam um nome depois (`<rota><nome>`).
@@ -15,6 +15,9 @@ const ROUTES: &[&str] = &[
     "config/inherited",
     "config/export",
     "doctor",
+    "quality",
+    "docs",
+    "doc",
     "orchestration",
     "orchestration/file",
     "moirai/plan",
@@ -24,6 +27,8 @@ const ROUTES: &[&str] = &[
     "reviews",
     "reviews/loop",
     "review/report",
+    "log-files",
+    "log",
 ];
 
 /// Corpo da rota: JSON indentado, ou o texto cru das rotas `text/plain` (`config/export`).
@@ -90,6 +95,22 @@ fn read(
                 .map_err(fail)
         }
         "doctor" => config::doctor_json(env).map(Body::Json).map_err(fail),
+        "quality" => json(qualidade::quality_state(env)),
+        "docs" => json(docs::docs_index(env)),
+        "doc" => docs::doc_text(env, q.or_empty("id")).map(Body::Json),
+        "log-files" => json(logs::log_files_json(env)),
+        "log" => {
+            let snapshot = hades_panel_core::amostra::snapshot(env);
+            let containers = container_names(&snapshot);
+            logs::read_log(
+                env,
+                q.or_empty("src"),
+                q.get("n").unwrap_or("400"),
+                q.get("offset"),
+                &containers,
+            )
+            .map(Body::Json)
+        }
         "snapshot" => json(hades_panel_core::amostra::snapshot(env)),
         "gates" => json(hades_panel_core::fila::fila(env)),
         "orchestration" => json(orquestracao::snapshot(env, vivo)),
@@ -111,6 +132,16 @@ fn read(
         "review/report" => revisoes::review_report(env, q.or_empty("id")).map(Body::Json),
         _ => Err(PanelError::plain(format!("rota sem leitor: {key}"))),
     }
+}
+
+/// `containerNames` (`dump.ts:44`): o `name` de cada linha de `containers` da amostra.
+fn container_names(snapshot: &Value) -> Vec<String> {
+    snapshot["containers"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|c| c["name"].as_str().map(str::to_owned))
+        .collect()
 }
 
 /// A query da rota (`?a=1&b=2`) seguida dos `k=v` do argv, como o `URLSearchParams` do TS: o primeiro valor de cada

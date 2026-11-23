@@ -666,3 +666,174 @@ argv = ["snapshot"]
 ts_cmd = ["{skill}/src/cli.ts", "panel"]
 env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_PROC_ROOT = "proc", HADES_CGROUP_ROOT = "cg", HADES_PANEL_NO_INFRA = "1" }
 compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "quality.sem-projeto"
+fixture = "cfg-vazio"
+argv = ["quality"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "docs.indice"
+fixture = "cfg-vazio"
+argv = ["docs"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "doc.valido"
+fixture = "cfg-vazio"
+argv = ["doc", "id=SKILL.md"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "doc.invalido"
+fixture = "cfg-vazio"
+argv = ["doc", "id=../etc/passwd"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "doc.sem-id"
+fixture = "cfg-vazio"
+argv = ["doc"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "log-files.vazio"
+fixture = "cfg-vazio"
+argv = ["log-files"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "log-files.com-arquivos"
+fixture = "log-dados"
+argv = ["log-files"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "log.file-em-logs"
+fixture = "log-dados"
+argv = ["log", "src=file:app.log", "n=2"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "log.file-na-raiz"
+fixture = "log-dados"
+argv = ["log?src=file:raiz.log"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "log.file-invalido"
+fixture = "log-dados"
+argv = ["log", "src=file:../x.log"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "log.job"
+fixture = "log-dados"
+argv = ["log", "src=job:j-1"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "log.job-offset"
+fixture = "log-dados"
+argv = ["log", "src=job:j-1", "offset=12"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "log.job-ausente"
+fixture = "log-dados"
+argv = ["log", "src=job:nada"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "log.doc"
+fixture = "log-dados"
+argv = ["log", "src=doc:STATUS.md"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "log.doc-vazio"
+fixture = "log-dados"
+argv = ["log", "src=doc:notes.md"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "log.doc-fora-da-lista"
+fixture = "log-dados"
+argv = ["log", "src=doc:config.env"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "log.fonte-invalida"
+fixture = "log-dados"
+argv = ["log", "src=nada:x"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "log.n-invalido"
+fixture = "log-dados"
+argv = ["log", "src=file:app.log", "n=abc"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "log.docker-desconhecido"
+fixture = "log-dados"
+argv = ["log", "src=docker:nada"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
