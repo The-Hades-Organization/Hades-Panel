@@ -1,0 +1,5 @@
+{"id":"r1","round":1,"startedAt":"2026-11-23T12:00:00Z","outcome":"ok","reviewed":[1,2],"skipped":[],"costUsd":0.25,"tokens":1200,"usage":{"in":10}}
+linha ruim
+{"id":"r2","round":2,"startedAt":"2026-11-23T13:00:00Z","reviewed":[3]}
+{"id":"r3","round":"x","startedAt":"2026-11-23T13:30:00Z"}
+{"id":"r4","round":3,"startedAt":"2026-11-23T14:00:00Z","outcome":"erro","costUsd":"caro","tokens":7}

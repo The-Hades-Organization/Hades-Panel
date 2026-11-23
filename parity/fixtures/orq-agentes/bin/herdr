@@ -1,0 +1,3 @@
+#!/bin/sh
+[ "$1 $2" = "agent list" ] || exit 2
+echo '{"result":{"agents":[{"name":"alfa","agent_status":"working","terminal_title_stripped":"alfa: build","foreground_cwd":"/x","pane_id":"p1"},{"name":"alfa","agent_status":"idle","pane_id":"p2"},{"name":"","agent_status":"idle"},{"name":"beta","agent_status":null}]}}'

@@ -312,3 +312,340 @@ argv = ["/api/gates"]
 ts_cmd = ["{skill}/src/cli.ts", "panel"]
 env = { HADES_NOW = "2026-11-23T15:04:05Z" }
 compare = ["stdout", "stderr", "exit"]
+
+# Orquestração e Moirai: `orchestration`, `orchestration/file`, `moirai/plan` e `moirai/unit/<nome>`. O herdr é um stub
+# da fixture (HADES_HERDR_BIN); sem transcripts, o custo do Moirai é 0. Consumo e revisões: `usage` só sem arquivo e
+# `limits` só sem amostras (o resto depende do relógio do host); `reviews/loop` lê o remote do repo do setup-repo.sh.
+
+[[case]]
+id = "orchestration.sem-locks"
+fixture = "cfg-vazio"
+argv = ["orchestration"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "orchestration.agentes"
+fixture = "orq-agentes"
+argv = ["orchestration"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_HERDR_BIN = "~/bin/herdr" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "orchestration.rota-api"
+fixture = "orq-agentes"
+argv = ["/api/orchestration/"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_HERDR_BIN = "~/bin/herdr" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "orchestration.herdr-ausente"
+fixture = "orq-agentes"
+argv = ["orchestration"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_HERDR_BIN = "~/bin/nao-existe" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "orchestration.pasta-de-relatorios"
+fixture = "orq-relatorios"
+argv = ["orchestration"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_HERDR_BIN = "~/bin/nao-existe" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "orchestration-file.brief"
+fixture = "orq-agentes"
+argv = ["orchestration/file", "name=alfa", "file=brief"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "orchestration-file.perguntas"
+fixture = "orq-agentes"
+argv = ["orchestration/file?name=alfa&file=questions"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "orchestration-file.report"
+fixture = "orq-agentes"
+argv = ["orchestration/file", "name=alfa", "file=report"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "orchestration-file.sem-arquivo"
+fixture = "orq-agentes"
+argv = ["orchestration/file", "name=alfa", "file=handoff"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "orchestration-file.worktree-vazia"
+fixture = "orq-agentes"
+argv = ["orchestration/file", "name=beta", "file=brief"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "orchestration-file.pasta-de-relatorios"
+fixture = "orq-relatorios"
+argv = ["orchestration/file", "name=gama", "file=handoff"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "orchestration-file.agente-invalido"
+fixture = "orq-agentes"
+argv = ["orchestration/file", "name=Alfa!", "file=brief"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "orchestration-file.nao-registrado"
+fixture = "orq-agentes"
+argv = ["orchestration/file", "name=omega", "file=brief"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "orchestration-file.arquivo-invalido"
+fixture = "orq-agentes"
+argv = ["orchestration/file", "name=alfa", "file=diario"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "orchestration-file.sem-locks"
+fixture = "cfg-vazio"
+argv = ["orchestration/file", "name=alfa", "file=brief"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "orchestration-file.sem-query"
+fixture = "orq-agentes"
+argv = ["orchestration/file"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "moirai.plan-sem-locks"
+fixture = "cfg-vazio"
+argv = ["moirai/plan"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "moirai.plan-agentes"
+fixture = "orq-agentes"
+argv = ["moirai/plan"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "moirai.unit-alfa"
+fixture = "orq-agentes"
+argv = ["moirai/unit/alfa"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "moirai.unit-ausente"
+fixture = "orq-agentes"
+argv = ["moirai/unit/omega"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "moirai.unit-registry"
+fixture = "orq-agentes"
+argv = ["moirai/unit/alfa?registry=_skill"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "moirai.unit-registry-desconhecido"
+fixture = "orq-agentes"
+argv = ["moirai/unit/alfa", "registry=nada"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "moirai.unit-uri-ruim"
+fixture = "orq-agentes"
+argv = ["moirai/unit/%E0%A4%A"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "moirai.unit-codificado"
+fixture = "orq-agentes"
+argv = ["/api/moirai/unit/al%66a"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "usage.sem-arquivo"
+fixture = "cfg-vazio"
+argv = ["usage"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "limits.sem-amostras"
+fixture = "cfg-vazio"
+argv = ["limits"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "limits.rota-api"
+fixture = "cfg-vazio"
+argv = ["/api/limits/"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "reviews.vazio"
+fixture = "cfg-vazio"
+argv = ["reviews"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "reviews.itens"
+fixture = "rev-itens"
+argv = ["reviews"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "review-report.presente"
+fixture = "rev-itens"
+argv = ["review/report", "id=rev-aaaa0001"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "review-report.query-na-rota"
+fixture = "rev-itens"
+argv = ["review/report?id=rev-aaaa0001"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "review-report.sem-arquivo"
+fixture = "rev-itens"
+argv = ["review/report", "id=rev-aaaa0009"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "review-report.id-invalido"
+fixture = "rev-itens"
+argv = ["review/report", "id=x/../y"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "review-report.sem-id"
+fixture = "rev-itens"
+argv = ["review/report"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "reviews-loop.sem-remote"
+fixture = "cfg-vazio"
+argv = ["reviews/loop"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "reviews-loop.sem-pasta"
+fixture = "rev-loop-sem-pasta"
+argv = ["reviews/loop"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-repo.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "reviews-loop.rodadas"
+fixture = "rev-loop"
+argv = ["reviews/loop"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-repo.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]

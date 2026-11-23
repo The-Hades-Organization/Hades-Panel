@@ -8,6 +8,7 @@ repository.workspace = true
 [dependencies]
 hades-core.workspace = true
 jiff = "0.2"
+moirai-core = { git = "https://github.com/The-Hades-Organization/Moirai", tag = "v0.1.0" }
 regex = "1"
 serde_json.workspace = true
 

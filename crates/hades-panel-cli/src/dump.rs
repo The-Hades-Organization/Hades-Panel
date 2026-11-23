@@ -2,15 +2,27 @@
 
 use hades_panel_core::PanelEnv;
 use hades_panel_core::config::{self, ExportOptions};
+use hades_panel_core::leitura::PanelError;
+use hades_panel_core::vivo::{Sistema, Vivo};
+use hades_panel_core::{consumo, orquestracao, revisoes};
 use serde_json::{Value, json};
 
 /// Rotas com leitor no Rust. As rotas que terminam em `/` levam um nome depois (`<rota><nome>`).
 const ROUTES: &[&str] = &[
+    "gates",
     "config",
     "config/inherited",
     "config/export",
     "doctor",
-    "gates",
+    "orchestration",
+    "orchestration/file",
+    "moirai/plan",
+    "moirai/unit/",
+    "usage",
+    "limits",
+    "reviews",
+    "reviews/loop",
+    "review/report",
 ];
 
 /// Corpo da rota: JSON indentado, ou o texto cru das rotas `text/plain` (`config/export`).
@@ -45,16 +57,24 @@ fn route_key(path: &str) -> Option<&'static str> {
 pub fn panel_dump(env: &PanelEnv, route: &str, args: &[String]) -> (i32, Body) {
     let path = route_path(route);
     let q = Query::parse(route, args);
-    match route_key(path).map(|key| read(env, key, &q)) {
+    let read = |key| read(env, &Sistema, key, &path[key.len()..], &q);
+    match route_key(path).map(read) {
         Some(Ok(body)) => (0, body),
-        Some(Err(message)) => (1, Body::Json(json!({ "error": message }))),
+        Some(Err(e)) => (1, Body::Json(e.to_value())),
         None => (2, Body::Json(unknown(route))),
     }
 }
 
-/// Leitor de cada rota de `ROUTES`.
-fn read(env: &PanelEnv, key: &str, q: &Query) -> Result<Body, String> {
-    let fail = |e: hades_core::config::ConfigError| e.0;
+/// Leitor de cada rota de `ROUTES`; `rest` é o nome depois das rotas que terminam em `/`.
+fn read(
+    env: &PanelEnv,
+    vivo: &dyn Vivo,
+    key: &str,
+    rest: &str,
+    q: &Query,
+) -> Result<Body, PanelError> {
+    let fail = |e: hades_core::config::ConfigError| PanelError::plain(e.0);
+    let json = |v| Ok(Body::Json(v));
     match key {
         "config" => config::state_json(env).map(Body::Json).map_err(fail),
         "config/inherited" => Ok(Body::Json(config::inherited_json(env.env()))),
@@ -63,19 +83,36 @@ fn read(env: &PanelEnv, key: &str, q: &Query) -> Result<Body, String> {
                 all: q.get("all") == Some("1"),
                 identity: q.get("identity") == Some("1"),
             };
-            let now = env.now_ms().map_err(|e| e.to_string())?;
+            let now = env.now_ms().map_err(|e| PanelError::plain(e.to_string()))?;
             config::export_text(env.env(), &config::store(env), opts, now)
                 .map(Body::Text)
                 .map_err(fail)
         }
         "doctor" => config::doctor_json(env).map(Body::Json).map_err(fail),
-        "gates" => Ok(Body::Json(hades_panel_core::fila::fila(env))),
-        _ => Err(format!("rota sem leitor: {key}")),
+        "gates" => json(hades_panel_core::fila::fila(env)),
+        "orchestration" => json(orquestracao::snapshot(env, vivo)),
+        "orchestration/file" => {
+            orquestracao::file(env, q.or_empty("name"), q.or_empty("file")).map(Body::Json)
+        }
+        "moirai/plan" => json(orquestracao::moirai_routes(env).plan()),
+        "moirai/unit/" => {
+            let name = uri_decode(rest).ok_or_else(|| PanelError::plain("URI malformed"))?;
+            orquestracao::moirai_routes(env)
+                .unit(&name, q.get("registry"))
+                .map(Body::Json)
+                .map_err(orquestracao::moirai_error)
+        }
+        "usage" => json(consumo::usage(env, vivo)),
+        "limits" => json(consumo::limits(env)),
+        "reviews" => json(revisoes::reviews(env, vivo)),
+        "reviews/loop" => json(revisoes::reviews_loop(env, vivo)),
+        "review/report" => revisoes::review_report(env, q.or_empty("id")).map(Body::Json),
+        _ => Err(PanelError::plain(format!("rota sem leitor: {key}"))),
     }
 }
 
 /// A query da rota (`?a=1&b=2`) seguida dos `k=v` do argv, como o `URLSearchParams` do TS: o primeiro valor de cada
-/// chave vence e pedaço vazio é ignorado.
+/// chave vence, pedaço vazio e valor vazio são ignorados (`dump.ts`: `v !== ""`).
 struct Query(Vec<(String, String)>);
 
 impl Query {
@@ -89,6 +126,7 @@ impl Query {
                 let (k, v) = p.split_once('=').unwrap_or((p, ""));
                 (form_decode(k), form_decode(v))
             })
+            .filter(|(_, v)| !v.is_empty())
             .collect();
         Self(pairs)
     }
@@ -99,6 +137,28 @@ impl Query {
             .find(|(k, _)| k == key)
             .map(|(_, v)| v.as_str())
     }
+
+    fn or_empty(&self, key: &str) -> &str {
+        self.get(key).unwrap_or_default()
+    }
+}
+
+/// `decodeURIComponent`: `%XX` em UTF-8; `%` sem dois hexas ou bytes fora de UTF-8 é `None` (o `URIError` do JS).
+fn uri_decode(text: &str) -> Option<String> {
+    let bytes = text.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' {
+            let hex = |at: usize| bytes.get(at).and_then(|b| (*b as char).to_digit(16));
+            out.push((hex(i + 1)? * 16 + hex(i + 2)?) as u8);
+            i += 3;
+        } else {
+            out.push(bytes[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8(out).ok()
 }
 
 /// `application/x-www-form-urlencoded`: `+` é espaço e `%XX` é byte; `%` sem dois hexas fica como está.
@@ -161,7 +221,12 @@ mod tests {
             panic!("esperava JSON")
         };
         assert_eq!(body["error"], "rota desconhecida: /api/nada?x=1");
-        assert_eq!(body["routes"], json!(ROUTES));
+        assert!(
+            body["routes"]
+                .as_array()
+                .is_some_and(|r| r.contains(&json!("moirai/unit/<nome>")))
+        );
+        assert_eq!(body["routes"].as_array().map(Vec::len), Some(ROUTES.len()));
     }
 
     #[test]
