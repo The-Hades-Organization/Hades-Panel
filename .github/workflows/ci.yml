@@ -22,7 +22,7 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
   # sha do Hades-Skill contra o qual o job parity roda; trocar é mudança explícita, e o diff da matriz mostra o que mudou no TS
-  HADES_SKILL_SHA: 3bd23a1b4625fd6a30c4288923b694246d0be192
+  HADES_SKILL_SHA: c2bf2b3f2697a03826769dbaec24b13b801ebbd2
   # tag do Hades-Core de onde sai o runner da matriz
   HADES_CORE_TAG: v0.2.7
 

@@ -1,0 +1,2 @@
+t1	done	dur=40s	cmd=node nx.js test demo
+t2	done	dur=60s	cmd=node nx.js test demo

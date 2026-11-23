@@ -293,9 +293,7 @@ setup = "setup-config.sh"
 env = { HADES_NOW = "2026-11-23T15:04:05Z" }
 compare = ["stdout", "stderr", "exit"]
 
-# Fila e loop: `gates`. Sem `LOCKS` no env.sh de `$D` a fila não está disponível. Os casos com fila (gate rodando,
-# aguardando, lock preso, escalação, entrega) dependem do relógio e da raiz de cgroup do lado TS, que usa `Date.now()`
-# e `/sys/fs/cgroup` no dump (gatewatch.ts:146); entram quando o dump aceitar `HADES_NOW` e raiz de cgroup.
+# Fila e loop: `gates`. Sem `LOCKS` no env.sh de `$D` a fila não está disponível.
 
 [[case]]
 id = "gates.sem-locks"
@@ -648,4 +646,15 @@ argv = ["reviews/loop"]
 ts_cmd = ["{skill}/src/cli.ts", "panel"]
 setup = "setup-repo.sh"
 env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+# Fila disponível: `LOCKS` no env.sh, /proc e cgroup de fixture (`HADES_PROC_ROOT`, `HADES_CGROUP_ROOT` relativos ao
+# HOME do sandbox), sem docker nem systemd (`HADES_PANEL_NO_INFRA=1`). Gate rodando com scope, gate aguardando, lock
+# exclusivo, escalação aberta e entregas.
+[[case]]
+id = "gates.gate-rodando"
+fixture = "fila-gate"
+argv = ["gates"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_PROC_ROOT = "proc", HADES_CGROUP_ROOT = "cg", HADES_PANEL_NO_INFRA = "1" }
 compare = ["stdout", "stderr", "exit"]

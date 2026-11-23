@@ -1,0 +1,1 @@
+{"escalations":[{"id":"e1","pr":12,"why":"conflito","askedAt":"2026-11-23T14:00:00Z"},{"id":"e2","answeredAt":"x"}],"deliveries":{"a":{"status":"ok"},"b":{"status":"ok"},"c":{}}}

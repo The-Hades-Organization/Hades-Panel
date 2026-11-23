@@ -68,14 +68,15 @@ pub struct Sonda<'a> {
 }
 
 impl Sonda<'_> {
-    /// O agora do `PanelEnv` (`HADES_NOW` fixa a fixture), o cgroup do sistema e o uid do processo.
+    /// O agora do `PanelEnv` (`HADES_NOW` fixa a fixture), o cgroup (`HADES_CGROUP_ROOT`, `panel/system.ts`
+    /// `cgroupRoot`) e o uid do processo.
     pub fn do_sistema(env: &PanelEnv) -> Sonda<'static> {
         use std::os::unix::fs::MetadataExt;
         let now = env.now_ms().map_or_else(|_| 0.0, |ms| ms as f64 / 1000.0);
         let uid = std::fs::metadata("/proc/self").map_or(0, |m| m.uid());
         Sonda {
             now,
-            cgroup_root: PathBuf::from(CGROUP_ROOT),
+            cgroup_root: PathBuf::from(env.env().get("HADES_CGROUP_ROOT").unwrap_or(CGROUP_ROOT)),
             uid,
             infra: &SemInfra,
         }
