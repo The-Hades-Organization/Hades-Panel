@@ -5,7 +5,13 @@ use hades_panel_core::config::{self, ExportOptions};
 use serde_json::{Value, json};
 
 /// Rotas com leitor no Rust. As rotas que terminam em `/` levam um nome depois (`<rota><nome>`).
-const ROUTES: &[&str] = &["config", "config/inherited", "config/export", "doctor"];
+const ROUTES: &[&str] = &[
+    "config",
+    "config/inherited",
+    "config/export",
+    "doctor",
+    "gates",
+];
 
 /// Corpo da rota: JSON indentado, ou o texto cru das rotas `text/plain` (`config/export`).
 #[derive(Debug, PartialEq)]
@@ -63,6 +69,7 @@ fn read(env: &PanelEnv, key: &str, q: &Query) -> Result<Body, String> {
                 .map_err(fail)
         }
         "doctor" => config::doctor_json(env).map(Body::Json).map_err(fail),
+        "gates" => Ok(Body::Json(hades_panel_core::fila::fila(env))),
         _ => Err(format!("rota sem leitor: {key}")),
     }
 }

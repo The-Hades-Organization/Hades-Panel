@@ -292,3 +292,23 @@ ts_cmd = ["{skill}/src/cli.ts", "panel"]
 setup = "setup-config.sh"
 env = { HADES_NOW = "2026-11-23T15:04:05Z" }
 compare = ["stdout", "stderr", "exit"]
+
+# Fila e loop: `gates`. Sem `LOCKS` no env.sh de `$D` a fila não está disponível. Os casos com fila (gate rodando,
+# aguardando, lock preso, escalação, entrega) dependem do relógio e da raiz de cgroup do lado TS, que usa `Date.now()`
+# e `/sys/fs/cgroup` no dump (gatewatch.ts:146); entram quando o dump aceitar `HADES_NOW` e raiz de cgroup.
+
+[[case]]
+id = "gates.sem-locks"
+fixture = "fila-vazia"
+argv = ["gates"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "gates.rota-api"
+fixture = "fila-vazia"
+argv = ["/api/gates"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
