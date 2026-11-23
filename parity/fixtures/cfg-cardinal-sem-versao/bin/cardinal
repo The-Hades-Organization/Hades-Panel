@@ -1,0 +1,5 @@
+#!/bin/sh
+case "$1" in
+  --version) echo 'cardinal sem versao' ;;
+  --check) exit 0 ;;
+esac

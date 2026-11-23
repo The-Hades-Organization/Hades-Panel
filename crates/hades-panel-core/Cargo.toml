@@ -7,6 +7,9 @@ repository.workspace = true
 
 [dependencies]
 hades-core.workspace = true
+jiff = "0.2"
+regex = "1"
+serde_json.workspace = true
 
 [lints]
 workspace = true

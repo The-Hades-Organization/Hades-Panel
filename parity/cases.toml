@@ -2,3 +2,293 @@
 # O argv é o do binário; o lado TS ganha o subcomando `panel` por `ts_cmd = ["{skill}/src/cli.ts", "panel"]`. A skill
 # (--ts e HADES_SKILL_DIR) é a montada por parity/montar-skill.sh. Fixtures de `$D`, WORK_ROOT e /proc fictícias.
 # Os casos entram com os leitores: Configurações, Fila e loop, Orquestração, Consumo e Snapshot.
+# Configurações: `config`, `config/inherited`, `config/export` e `doctor`. O catálogo vem do kit da skill montada
+# (setup-config.sh); `config/preview` é POST e fica nos testes unitários do hades-panel-core.
+
+[[case]]
+id = "config.vazio"
+fixture = "cfg-vazio"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.rota-api"
+fixture = "cfg-vazio"
+argv = ["/api/config/"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.dono"
+fixture = "cfg-dono"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.orfas-e-linhas-fora"
+fixture = "cfg-orfa"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.plugin"
+fixture = "cfg-plugin"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.motor-hades-mudado"
+fixture = "cfg-motor-hades"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.motor-hades-pelo-env"
+fixture = "cfg-vazio"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_DRAWING_ENGINE = "hades" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.extensao-desligada"
+fixture = "cfg-ext-off"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.extensao-desligada-pelo-env"
+fixture = "cfg-vazio"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_EXT_CARDINAL = "0" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.cardinal-ok"
+fixture = "cfg-cardinal-ok"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_CARDINAL_BIN = "~/bin/cardinal" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.cardinal-ok-motor-hades"
+fixture = "cfg-cardinal-ok"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_CARDINAL_BIN = "~/bin/cardinal", HADES_DRAWING_ENGINE = "hades" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.cardinal-versao-velha"
+fixture = "cfg-cardinal-velho"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_CARDINAL_BIN = "~/bin/cardinal" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.cardinal-versao-ilegivel"
+fixture = "cfg-cardinal-sem-versao"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_CARDINAL_BIN = "~/bin/cardinal" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.cardinal-saude-falha"
+fixture = "cfg-cardinal-saude"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_CARDINAL_BIN = "~/bin/cardinal" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.cardinal-relativo-ausente"
+fixture = "cfg-vazio"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_CARDINAL_BIN = "cardinal-que-nao-existe" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.cardinal-web"
+fixture = "cfg-cardinal-web"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_CARDINAL_WEB = "~/web" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "config.cardinal-web-sem-index"
+fixture = "cfg-cardinal-web-vazio"
+argv = ["config"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_CARDINAL_WEB = "~/web" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "inherited.ausente"
+fixture = "cfg-vazio"
+argv = ["config/inherited"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "inherited.objeto"
+fixture = "inh-objeto"
+argv = ["config/inherited"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "inherited.nao-objeto"
+fixture = "inh-lista"
+argv = ["config/inherited"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "inherited.campos-nao-texto"
+fixture = "inh-nao-string"
+argv = ["config/inherited"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "inherited.pelo-env"
+fixture = "inh-env"
+argv = ["config/inherited"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_CLAUDE_SETTINGS = "data/meu-settings.json" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "export.vazio"
+fixture = "cfg-vazio"
+argv = ["config/export"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "export.dono"
+fixture = "exp-dono"
+argv = ["config/export"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "export.tudo"
+fixture = "exp-dono"
+argv = ["config/export", "all=1"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "export.identidade"
+fixture = "exp-dono"
+argv = ["config/export", "identity=1"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "export.query-na-rota"
+fixture = "exp-dono"
+argv = ["config/export?all=1&identity=1"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "export.primeiro-valor-vence"
+fixture = "exp-dono"
+argv = ["config/export?all=1", "all=0", "identity=0"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "export.versao-ao-lado-do-kit"
+fixture = "exp-versao"
+argv = ["config/export"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "export.versao-instalada"
+fixture = "exp-versao-instalada"
+argv = ["config/export"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "doctor.ausente"
+fixture = "cfg-vazio"
+argv = ["doctor"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "doctor.presente"
+fixture = "doc-presente"
+argv = ["doctor"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+setup = "setup-config.sh"
+env = { HADES_NOW = "2026-11-23T15:04:05Z" }
+compare = ["stdout", "stderr", "exit"]

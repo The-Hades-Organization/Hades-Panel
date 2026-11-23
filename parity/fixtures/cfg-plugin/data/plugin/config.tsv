@@ -1,0 +1,4 @@
+# catálogo do plugin
+HADES_PLUGIN_MODO	a	enum:a,b	Plugin	Modo do plugin	now	Modo.
+HADES_PLUGIN_TOKEN		secret	Plugin	Token do plugin	now	Token.
+HADES_WEB_WORKERS	3	int:1:12	Builds e fila	Workers	now	Troca o padrão.

@@ -1,0 +1,5 @@
+#!/bin/sh
+case "$1" in
+  --version) echo 'cardinal 1.0.0' ;;
+  --check) exit 1 ;;
+esac

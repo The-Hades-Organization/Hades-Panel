@@ -1,5 +1,5 @@
 //! `hades-panel`: o `hades panel dump` (`src/commands/panel.ts`) em Rust. As rotas entram com os leitores do
-//! `hades-panel-core`; até lá toda rota é desconhecida.
+//! `hades-panel-core`.
 
 mod dump;
 
@@ -42,7 +42,10 @@ fn run_dump(env: Env, args: &[String]) -> i32 {
         }
     };
     let (rc, body) = dump::panel_dump(&panel, route, query);
-    out(&hades_core::jsonfmt::json_indent(&body, 2));
+    match body {
+        dump::Body::Json(v) => out(&hades_core::jsonfmt::json_indent(&v, 2)),
+        dump::Body::Text(t) => print!("{t}"),
+    }
     rc
 }
 
