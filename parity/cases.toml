@@ -658,3 +658,11 @@ argv = ["gates"]
 ts_cmd = ["{skill}/src/cli.ts", "panel"]
 env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_PROC_ROOT = "proc", HADES_CGROUP_ROOT = "cg", HADES_PANEL_NO_INFRA = "1" }
 compare = ["stdout", "stderr", "exit"]
+
+[[case]]
+id = "snapshot.sem-infra"
+fixture = "fila-gate"
+argv = ["snapshot"]
+ts_cmd = ["{skill}/src/cli.ts", "panel"]
+env = { HADES_NOW = "2026-11-23T15:04:05Z", HADES_PROC_ROOT = "proc", HADES_CGROUP_ROOT = "cg", HADES_PANEL_NO_INFRA = "1" }
+compare = ["stdout", "stderr", "exit"]

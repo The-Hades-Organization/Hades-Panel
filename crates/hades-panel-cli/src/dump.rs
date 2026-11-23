@@ -9,6 +9,7 @@ use serde_json::{Value, json};
 
 /// Rotas com leitor no Rust. As rotas que terminam em `/` levam um nome depois (`<rota><nome>`).
 const ROUTES: &[&str] = &[
+    "snapshot",
     "gates",
     "config",
     "config/inherited",
@@ -89,6 +90,7 @@ fn read(
                 .map_err(fail)
         }
         "doctor" => config::doctor_json(env).map(Body::Json).map_err(fail),
+        "snapshot" => json(hades_panel_core::amostra::snapshot(env)),
         "gates" => json(hades_panel_core::fila::fila(env)),
         "orchestration" => json(orquestracao::snapshot(env, vivo)),
         "orchestration/file" => {
