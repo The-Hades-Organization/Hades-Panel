@@ -37,6 +37,20 @@ No Linux, o app precisa das bibliotecas de `scripts/linux-deps.sh`.
 `parity/cases.toml` é a matriz que compara `hades-panel dump` com o `hades panel dump` da skill sobre as mesmas
 fixtures. O job `parity` do CI roda a matriz contra o sha do Hades-Skill fixado no workflow.
 
+## Capturas
+
+O `hades-panel-app` nos temas claro e escuro. Os dados são fictícios, montados num HOME de exemplo.
+
+| Tela | Claro | Escuro |
+| --- | --- | --- |
+| Visão geral | ![Visão geral, tema claro](docs/identidade/painel-visao-geral-claro.png) | ![Visão geral, tema escuro](docs/identidade/painel-visao-geral-escuro.png) |
+| Fila de gates, com um gate rodando e o detalhe aberto no painel lateral | ![Fila de gates, tema claro](docs/identidade/painel-fila-claro.png) | ![Fila de gates, tema escuro](docs/identidade/painel-fila-escuro.png) |
+| Orquestração, com agentes, uma pergunta aberta e uma consolidação | ![Orquestração, tema claro](docs/identidade/painel-orquestracao-claro.png) | ![Orquestração, tema escuro](docs/identidade/painel-orquestracao-escuro.png) |
+| Consumo | ![Consumo, tema claro](docs/identidade/painel-consumo-claro.png) | ![Consumo, tema escuro](docs/identidade/painel-consumo-escuro.png) |
+| Configurações | ![Configurações, tema claro](docs/identidade/painel-configuracoes-claro.png) | ![Configurações, tema escuro](docs/identidade/painel-configuracoes-escuro.png) |
+| Vereditos do Cerberus, ferramenta aberta dentro da janela | ![Vereditos do Cerberus, tema claro](docs/identidade/painel-cerberus-vereditos-claro.png) | ![Vereditos do Cerberus, tema escuro](docs/identidade/painel-cerberus-vereditos-escuro.png) |
+| Paleta Ctrl K aberta | ![Paleta Ctrl K, tema claro](docs/identidade/painel-paleta-claro.png) | ![Paleta Ctrl K, tema escuro](docs/identidade/painel-paleta-escuro.png) |
+
 ## Licença
 
 MIT.
