@@ -33,6 +33,16 @@ use crate::vm::{Historico, Leitura, Pagina, Tarefa, Tom, VisaoGeral};
 
 pub const NOME: &str = "Hades";
 
+/// Como a janela abre: a página, a ferramenta embutida no corpo, a paleta aberta e o detalhe do primeiro gate da Fila.
+/// Serve às flags `--tela`, `--ferramenta`, `--paleta` e `--detalhe` do binário.
+#[derive(Clone, Debug, Default)]
+pub struct Abertura {
+    pub pagina: Option<String>,
+    pub ferramenta: Option<(String, String)>,
+    pub paleta: bool,
+    pub detalhe: bool,
+}
+
 /// Intervalo da amostra periódica: snapshot e fila relidos no executor de fundo.
 const PERIODO_MS: u64 = 15_000;
 
@@ -60,6 +70,8 @@ pub struct PanelView {
     confirmar: Option<(Pedido, String)>,
     aviso_acao: Option<(Tone, String, Option<String>)>,
     argos: Option<(argos::Estado, String)>,
+    /// Abre o detalhe do primeiro gate na primeira leitura da Fila (`Abertura::detalhe`).
+    abrir_detalhe: bool,
 }
 
 fn tone(t: Tom) -> Tone {
@@ -82,11 +94,25 @@ fn cor(p: &Palette, t: Option<Tom>) -> gpui::Hsla {
 
 impl PanelView {
     pub fn new(env: Env, foco: FocusHandle, cx: &mut Context<Self>) -> Self {
+        Self::new_com(env, foco, &Abertura::default(), cx)
+    }
+
+    pub fn new_com(
+        env: Env,
+        foco: FocusHandle,
+        abertura: &Abertura,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        let pagina = abertura
+            .pagina
+            .as_deref()
+            .and_then(vm::por_id)
+            .unwrap_or_else(|| vm::por_id(vm::VISAO_GERAL).expect("Visão geral no trilho"));
         let mut v = Self {
             env,
-            pagina: vm::por_id(vm::VISAO_GERAL).expect("Visão geral no trilho"),
+            pagina,
             recolhida: false,
-            paleta: false,
+            paleta: abertura.paleta,
             foco,
             dados: None,
             aviso: None,
@@ -104,11 +130,16 @@ impl PanelView {
             confirmar: None,
             aviso_acao: None,
             argos: None,
+            abrir_detalhe: abertura.detalhe,
         };
         let ligadas: Vec<_> = v.registros.iter().map(|r| r.ligada).collect();
         let ocupados: Vec<&str> = vm::paginas().map(|p| p.rotulo).collect();
         v.grupos_ferramentas = embutidas_vm::grupos(&ligadas, &ocupados);
         v.carregar_acoes(cx);
+        if v.pagina.id == vm::ARGOS {
+            v.consultar_argos(cx);
+        }
+        v.tela = telas::Tela::abrir(v.pagina.id, &v.env, cx);
         v.recarregar(cx);
         v
     }
@@ -134,6 +165,10 @@ impl PanelView {
                         v.historico
                             .registrar(vm::ponto(d.t_ms, &d.snapshot, &d.fila));
                         v.historico_fila.registrar(d.t_ms, &d.fila);
+                        if std::mem::take(&mut v.abrir_detalhe) && v.pagina.id == "queue" {
+                            let fila = telas::fila::FilaVm::de(&d.fila);
+                            v.detalhe = fila.lista().next().and_then(|g| fila.detalhe(&g.pid));
+                        }
                         v.dados = Some(d);
                         v.aviso = None;
                     }
@@ -798,12 +833,21 @@ impl Render for PanelView {
 }
 
 pub fn abrir_janela(cx: &mut App) {
+    abrir_janela_com(cx, Abertura::default());
+}
+
+pub fn abrir_janela_com(cx: &mut App, abertura: Abertura) {
     let aberta = cx.open_window(gpui::WindowOptions::default(), |window, cx| {
         window.set_window_title(NOME);
         let view: Entity<PanelView> = cx.new(|cx| {
             PanelView::iniciar(cx);
-            PanelView::new(Env::from_process(), cx.focus_handle(), cx)
+            PanelView::new_com(Env::from_process(), cx.focus_handle(), &abertura, cx)
         });
+        if let Some((id, tela)) = &abertura.ferramenta {
+            view.update(cx, |v, cx| {
+                v.ir_ferramenta(id, tela, window, cx);
+            });
+        }
         let foco = view.read(cx).foco.clone();
         window.focus(&foco, cx);
         view
