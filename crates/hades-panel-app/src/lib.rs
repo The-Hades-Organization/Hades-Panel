@@ -357,7 +357,6 @@ impl PanelView {
     }
 
     fn rail(&self, cx: &mut Context<Self>) -> Rail {
-        let p = palette(cx);
         let recolhimento = cx.entity();
         let selecao = cx.entity();
         let mut grupos: Vec<RailGroup> = Vec::new();
@@ -399,7 +398,6 @@ impl PanelView {
             .justify_between()
             .gap(px(8.0))
             .text_size(px(size::META))
-            .text_color(p.muted_fg)
             .child(projeto)
             .child(Kbd::new("Ctrl K"));
         Rail::new(grupos)
